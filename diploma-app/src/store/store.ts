@@ -1,7 +1,9 @@
 import { configureStore } from "@reduxjs/toolkit";
+import techsReducer from "./tech-slice";
 
 const store = configureStore({
     reducer: {
+        techs: techsReducer,
     },
 });
 
