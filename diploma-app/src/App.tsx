@@ -1,7 +1,7 @@
 import { Provider } from 'react-redux'
 import store from './store/store'
 import { Container, Typography } from '@mui/material'
-import TableCell from './components/tableCell'
+import Table from './components/tableCell'
 
 
 function App() {
@@ -10,7 +10,7 @@ function App() {
     <Provider store={store}>
       <Container maxWidth="md">
         <Typography component="h1" variant="h2" align="center">Device DataBase</Typography>
-        <TableCell />
+        <Table />
       </Container>
     </Provider>
   )
