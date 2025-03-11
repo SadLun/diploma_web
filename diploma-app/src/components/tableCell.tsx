@@ -1,5 +1,5 @@
 import { Autocomplete, Box, Checkbox, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TableSortLabel, TextField, Toolbar, Tooltip, Typography } from '@mui/material';
-import React from 'react';
+import React, { SyntheticEvent } from 'react';
 import { visuallyHidden } from '@mui/utils';
 import { alpha } from '@mui/material/styles';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -290,10 +290,14 @@ function EnhancedTableHead(props: EnhancedTableProps) {
             setRows(rows);
           }
         }
+
+        const handleFilter = (event: SyntheticEvent) => {
+          
+        }
       
         // Avoid a layout jump when reaching the last page with empty rows.
         const emptyRows =
-          page > 0 ? Math.max(0, (1 + page) * rowsPerPage - rows.length) : 0;
+          page > 0 ? Math.max(0, (1 + page) * rowsPerPage - filterRows.length) : 0;
       
         const visibleRows = React.useMemo(
           () =>
@@ -306,12 +310,13 @@ function EnhancedTableHead(props: EnhancedTableProps) {
         return (
           <Box sx={{ width: '100%' }}>
             <Autocomplete
-              id="free-solo-demo"
+              id="free-solo"
               freeSolo
+              autoSelect
               options={rows.map((option) => option.name)}
               renderInput={(params) => <TextField {...params} label="Поиск" />}
-              onChange={handleSearch}
               onKeyDown={handleSearch}
+              onInputChange={handleFilter}
             />
             <Paper sx={{ width: '100%', mb: 2 }}>
               <EnhancedTableToolbar numSelected={selected.length} />
