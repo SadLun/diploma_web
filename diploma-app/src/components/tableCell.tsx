@@ -278,13 +278,16 @@ function EnhancedTableHead(props: EnhancedTableProps) {
           setPage(0);
         };
 
-        const handleSearch = (event: React.KeyboardEvent<HTMLDivElement>, filterRows: Data[]) => {
+        const handleSearch = (event: React.KeyboardEvent<HTMLDivElement>) => {
           if (event.key === 'Enter') {
-            const searchValue = event.currentTarget.nodeValue;
+            const searchValue = (event.target as HTMLInputElement).value;
             if (searchValue != null) {
-              const filteredRows = filterRows.filter((row) => row.name.toLowerCase().includes(searchValue.toLowerCase()));
+              const filteredRows = rows.filter((row) => row.name.toLowerCase().includes(searchValue.toLowerCase()));
               setRows(filteredRows);
             }
+          }
+          if (event.key === 'Backspace') {
+            setRows(rows);
           }
         }
       
@@ -294,10 +297,10 @@ function EnhancedTableHead(props: EnhancedTableProps) {
       
         const visibleRows = React.useMemo(
           () =>
-            [...rows]
+            [...filterRows]
               .sort(getComparator(order, orderBy))
               .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage),
-          [order, orderBy, page, rowsPerPage],
+          [order, orderBy, page, rowsPerPage, filterRows],
         );
       
         return (
@@ -307,7 +310,8 @@ function EnhancedTableHead(props: EnhancedTableProps) {
               freeSolo
               options={rows.map((option) => option.name)}
               renderInput={(params) => <TextField {...params} label="Поиск" />}
-              onKeyDown={(event) => handleSearch(event, rows)}
+              onChange={handleSearch}
+              onKeyDown={handleSearch}
             />
             <Paper sx={{ width: '100%', mb: 2 }}>
               <EnhancedTableToolbar numSelected={selected.length} />
