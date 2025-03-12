@@ -231,6 +231,7 @@ function EnhancedTableHead(props: EnhancedTableProps) {
         const [page, setPage] = React.useState(0);
         const [rowsPerPage, setRowsPerPage] = React.useState(5);
         const [filterRows, setRows] = React.useState<Data[]>(rows);
+        
       
         const handleRequestSort = (
           event: React.MouseEvent<unknown>,
@@ -286,38 +287,12 @@ function EnhancedTableHead(props: EnhancedTableProps) {
           }
         }, [filterRows])
 
-        // const handleSearch = (event: React.KeyboardEvent<HTMLDivElement>) => {
-        //   if (event.key === 'Enter') {
-        //     const searchValue = (event.target as HTMLInputElement).value;
-        //     if (searchValue != null) {
-        //       const filteredRows = rows.filter((row) => row.name.toLowerCase().includes(searchValue.toLowerCase()));
-        //       setRows(filteredRows);
-        //     }
-        //   }
-        //   if (event.key === 'Backspace') {
-        //     setRows(rows);
-        //   }
-        // }
-
         const handleChange = (e: SyntheticEvent, v: Data | string | null) => {
           if (typeof v === 'string') {
-            let i = 0;
             console.log(v);
             const filteredRows = rows.filter((row) => row.name.toLowerCase().includes(v.toLowerCase()));
             console.log(filteredRows);
-            //filterRows.splice(0, filterRows.length);
-
-            for (i=0;i < filteredRows.length; i++) {
-              console.log(setRows([{ //Проблема в том что он не записиывает ничего - возвращает undef
-                id: filteredRows[i].id,
-                image: filteredRows[i].image,
-                name: filteredRows[i].name,
-                description: filteredRows[i].description,
-                price: filteredRows[i].price,
-                rating: filteredRows[i].rating
-              }]))
-              console.log(filterRows)
-            }
+            setRows(filteredRows);
             console.log(filterRows)
           } else if (v) {
             setRows([v]);
@@ -325,10 +300,6 @@ function EnhancedTableHead(props: EnhancedTableProps) {
             setRows(rows);
           }
         }
-
-        // const handleFilter = (event: SyntheticEvent) => {
-          
-        // }
       
         // Avoid a layout jump when reaching the last page with empty rows.
         const emptyRows =
@@ -346,11 +317,11 @@ function EnhancedTableHead(props: EnhancedTableProps) {
           <Box sx={{ width: '100%' }}>
             <Autocomplete
               id="free-solo"
-              disablePortal
               freeSolo
-              autoSelect
               onChange={handleChange}
               options={rows}
+              noOptionsText="Ничего не найдено"
+              clearOnEscape
               getOptionLabel={(rows) => (typeof rows === 'string' ? rows : rows.name || '')}
               renderInput={(params) => <TextField {...params} label="Поиск" />}
             />
