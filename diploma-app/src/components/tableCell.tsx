@@ -1,5 +1,5 @@
 import { Autocomplete, Box, Checkbox, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TableSortLabel, TextField, Toolbar, Tooltip, Typography } from '@mui/material';
-import React, { SyntheticEvent } from 'react';
+import React, { SyntheticEvent, useEffect } from 'react';
 import { visuallyHidden } from '@mui/utils';
 import { alpha } from '@mui/material/styles';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -278,22 +278,57 @@ function EnhancedTableHead(props: EnhancedTableProps) {
           setPage(0);
         };
 
-        const handleSearch = (event: React.KeyboardEvent<HTMLDivElement>) => {
-          if (event.key === 'Enter') {
-            const searchValue = (event.target as HTMLInputElement).value;
-            if (searchValue != null) {
-              const filteredRows = rows.filter((row) => row.name.toLowerCase().includes(searchValue.toLowerCase()));
-              setRows(filteredRows);
-            }
+        useEffect(()=>{
+          if (filterRows){
+            setRows(filterRows);
+          } else {
+            setRows(rows)
           }
-          if (event.key === 'Backspace') {
+        }, [filterRows])
+
+        // const handleSearch = (event: React.KeyboardEvent<HTMLDivElement>) => {
+        //   if (event.key === 'Enter') {
+        //     const searchValue = (event.target as HTMLInputElement).value;
+        //     if (searchValue != null) {
+        //       const filteredRows = rows.filter((row) => row.name.toLowerCase().includes(searchValue.toLowerCase()));
+        //       setRows(filteredRows);
+        //     }
+        //   }
+        //   if (event.key === 'Backspace') {
+        //     setRows(rows);
+        //   }
+        // }
+
+        const handleChange = (e: SyntheticEvent, v: Data | string | null) => {
+          if (typeof v === 'string') {
+            let i = 0;
+            console.log(v);
+            const filteredRows = rows.filter((row) => row.name.toLowerCase().includes(v.toLowerCase()));
+            console.log(filteredRows);
+            //filterRows.splice(0, filterRows.length);
+
+            for (i=0;i < filteredRows.length; i++) {
+              console.log(setRows([{ //Проблема в том что он не записиывает ничего - возвращает undef
+                id: filteredRows[i].id,
+                image: filteredRows[i].image,
+                name: filteredRows[i].name,
+                description: filteredRows[i].description,
+                price: filteredRows[i].price,
+                rating: filteredRows[i].rating
+              }]))
+              console.log(filterRows)
+            }
+            console.log(filterRows)
+          } else if (v) {
+            setRows([v]);
+          } else {
             setRows(rows);
           }
         }
 
-        const handleFilter = (event: SyntheticEvent) => {
+        // const handleFilter = (event: SyntheticEvent) => {
           
-        }
+        // }
       
         // Avoid a layout jump when reaching the last page with empty rows.
         const emptyRows =
@@ -311,12 +346,13 @@ function EnhancedTableHead(props: EnhancedTableProps) {
           <Box sx={{ width: '100%' }}>
             <Autocomplete
               id="free-solo"
+              disablePortal
               freeSolo
               autoSelect
-              options={rows.map((option) => option.name)}
+              onChange={handleChange}
+              options={rows}
+              getOptionLabel={(rows) => (typeof rows === 'string' ? rows : rows.name || '')}
               renderInput={(params) => <TextField {...params} label="Поиск" />}
-              onKeyDown={handleSearch}
-              onInputChange={handleFilter}
             />
             <Paper sx={{ width: '100%', mb: 2 }}>
               <EnhancedTableToolbar numSelected={selected.length} />
