@@ -3,7 +3,8 @@ import React, { SyntheticEvent, useEffect } from 'react';
 import { visuallyHidden } from '@mui/utils';
 import { alpha } from '@mui/material/styles';
 import DeleteIcon from '@mui/icons-material/Delete';
-import FilterListIcon from '@mui/icons-material/FilterList';
+import AddIcon from '@mui/icons-material/Add';
+import AddDeviceModal from './add-device-modal';
 
 interface Data { //Данные должны будут прокидываться из слайса, который получает их из апи
     id: number;
@@ -170,60 +171,69 @@ function EnhancedTableHead(props: EnhancedTableProps) {
         );
     }
 
-      interface EnhancedTableToolbarProps {
-        numSelected: number;
-      }
-      function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
-        const { numSelected } = props;
-        return (
-          <Toolbar
-            sx={[
-              {
-                pl: { sm: 2 },
-                pr: { xs: 1, sm: 1 },
-              },
-              numSelected > 0 && {
-                bgcolor: (theme) =>
-                  alpha(theme.palette.primary.main, theme.palette.action.activatedOpacity),
-              },
-            ]}
-          >
-            {numSelected > 0 ? (
-              <Typography
-                sx={{ flex: '1 1 100%' }}
-                color="inherit"
-                variant="subtitle1"
-                component="div"
-              >
-                {numSelected} selected
-              </Typography>
-            ) : (
-              <Typography
-                sx={{ flex: '1 1 100%' }}
-                variant="h6"
-                id="tableTitle"
-                component="div"
-              >
-                
-              </Typography>
-            )}
-            {numSelected > 0 ? (
-              <Tooltip title="Delete">
-                <IconButton>
-                  <DeleteIcon />
-                </IconButton>
-              </Tooltip>
-            ) : (
-              <Tooltip title="Filter list">
-                <IconButton>
-                  <FilterListIcon />
-                </IconButton>
-              </Tooltip>
-            )}
-          </Toolbar>
-        );
-      }
+interface EnhancedTableToolbarProps {
+  numSelected: number;
+}
 
+// const handleModalOpen = (adding: boolean) => {
+//   <AddDeviceModal state={true} adding={adding}/>
+// };
+
+function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
+  const { numSelected } = props;
+  const [adding, setAdding] = React.useState(false);
+  const [open, setOpen] = React.useState(false);
+
+  return (
+    <Toolbar
+      sx={[
+        {
+          pl: { sm: 2 },
+          pr: { xs: 1, sm: 1 },
+        },
+        numSelected > 0 && {
+          bgcolor: (theme) =>
+            alpha(theme.palette.primary.main, theme.palette.action.activatedOpacity),
+        },
+      ]}
+    >
+      {numSelected > 0 ? (
+        <Typography
+          sx={{ flex: '1 1 100%' }}
+          color="inherit"
+          variant="subtitle1"
+          component="div"
+        >
+          {numSelected} selected
+        </Typography>
+      ) : (
+        <Typography
+          sx={{ flex: '1 1 100%' }}
+          variant="h6"
+          id="tableTitle"
+          component="div"
+        >
+                
+        </Typography>
+      )}
+      {numSelected > 0 ? (
+        <Tooltip title="Удалить">
+          <IconButton>
+            <DeleteIcon />
+          </IconButton>
+        </Tooltip>
+      ) : (
+        <Tooltip title="Добавить">
+          <IconButton onClick={() => {setAdding(true); setOpen(true)}}>
+            <AddIcon/>
+          </IconButton>
+        </Tooltip>
+      )}
+    <AddDeviceModal state={open} adding={adding} onClose={() => setOpen(false)}/>
+    </Toolbar>
+  );
+}
+// Почему-то стейт не меняется. Не передается нормально новое значение
       export default function EnhancedTable() {
         const [order, setOrder] = React.useState<Order>('asc');
         const [orderBy, setOrderBy] = React.useState<keyof Data>('description');
@@ -231,6 +241,8 @@ function EnhancedTableHead(props: EnhancedTableProps) {
         const [page, setPage] = React.useState(0);
         const [rowsPerPage, setRowsPerPage] = React.useState(5);
         const [filterRows, setRows] = React.useState<Data[]>(rows);
+        const [show, setShow] = React.useState(false);
+        const [adding, setAdding] = React.useState(false);
         
       
         const handleRequestSort = (
@@ -291,9 +303,7 @@ function EnhancedTableHead(props: EnhancedTableProps) {
           if (typeof v === 'string') {
             console.log(v);
             const filteredRows = rows.filter((row) => row.name.toLowerCase().includes(v.toLowerCase()));
-            console.log(filteredRows);
             setRows(filteredRows);
-            console.log(filterRows)
           } else if (v) {
             setRows([v]);
           } else {
@@ -315,6 +325,7 @@ function EnhancedTableHead(props: EnhancedTableProps) {
       
         return (
           <Box sx={{ width: '100%' }}>
+            <AddDeviceModal state={show} adding={adding} onClose={() => setShow(false)}/>
             <Autocomplete
               id="free-solo"
               freeSolo
@@ -325,6 +336,7 @@ function EnhancedTableHead(props: EnhancedTableProps) {
               getOptionLabel={(rows) => (typeof rows === 'string' ? rows : rows.name || '')}
               renderInput={(params) => <TextField {...params} label="Поиск" />}
             />
+            {filterRows.length > 0 ? 
             <Paper sx={{ width: '100%', mb: 2 }}>
               <EnhancedTableToolbar numSelected={selected.length} />
               <TableContainer>
@@ -349,7 +361,7 @@ function EnhancedTableHead(props: EnhancedTableProps) {
                       return (
                         <TableRow
                           hover
-                          onClick={(event) => handleClick(event, row.id)}
+                          onDoubleClick={() => {setShow(true); setAdding(false); console.log(show)}}
                           role="checkbox"
                           aria-checked={isItemSelected}
                           tabIndex={-1}
@@ -360,6 +372,7 @@ function EnhancedTableHead(props: EnhancedTableProps) {
                           <TableCell padding="checkbox">
                             <Checkbox
                               color="primary"
+                              onClick={(event) => handleClick(event, row.id)}
                               checked={isItemSelected}
                               inputProps={{
                                 'aria-labelledby': labelId,
@@ -396,13 +409,14 @@ function EnhancedTableHead(props: EnhancedTableProps) {
               <TablePagination
                 rowsPerPageOptions={[5, 10, 25]}
                 component="div"
-                count={rows.length}
+                count={filterRows.length}
                 rowsPerPage={rowsPerPage}
                 page={page}
                 onPageChange={handleChangePage}
                 onRowsPerPageChange={handleChangeRowsPerPage}
               />
-            </Paper>
+            </Paper> : <Typography align='center' variant='h5' pt={10}>Ничего не найдено. Попробуйте проверить правильность ввода или добавьте новое устройство.</Typography>}
+            
           </Box>
         );
       }
