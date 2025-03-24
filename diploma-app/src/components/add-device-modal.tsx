@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Modal from '@mui/material/Modal';
-import { TextField } from '@mui/material';
+import { Button, Stack, TextField } from '@mui/material';
 
 
 const style = {
@@ -37,18 +37,22 @@ const AddDeviceModal: React.FC<Props> = (props) => {
         aria-describedby="modal-modal-description"
       >
         <Box sx={style}>
-          {adding ? <Typography id="modal-modal-title" variant="h6" component="h2">
+          {adding ? <Typography id="modal-modal-title" variant="h6" component="h2" sx={{pb: 5}}>
             Добавить устройство
-          </Typography> : <Typography id="modal-modal-title" variant="h6" component="h2">
+          </Typography> : <Typography id="modal-modal-title" variant="h6" component="h2" sx={{pb: 5}}>
             Редактировать устройство
           </Typography>}
-          <TextField id="outlined-basic" label="Outlined" variant="outlined" />
-          <TextField id="outlined-basic" label="Outlined" variant="outlined" />
-          <TextField id="outlined-basic" label="Outlined" variant="outlined" />
-          <TextField id="outlined-basic" label="Outlined" variant="outlined" />
-          <TextField id="outlined-basic" label="Outlined" variant="outlined" />
-          <TextField id="outlined-basic" label="Outlined" variant="outlined" />
-          <TextField id="outlined-basic" label="Outlined" variant="outlined" />
+          <TextField id="outlined-basic" fullWidth label="Изображение" variant="outlined" sx={{pb: 2}}/>
+          <TextField id="outlined-basic" fullWidth required label="Название" variant="outlined" sx={{pb: 2}}/>
+          <TextField id="outlined-basic" fullWidth label="Вероятность безотказной работы на отрезке времени" variant="outlined" sx={{pb: 2}}/>
+          <TextField id="outlined-basic" fullWidth label="Средняя наработка до отказа" variant="outlined" sx={{pb: 2}}/>
+          <TextField id="outlined-basic" fullWidth label="Средняя наработка на отказ" variant="outlined" sx={{pb: 2}}/>
+          <TextField id="outlined-basic" fullWidth label="Интесивность отказов" variant="outlined" sx={{pb: 2}}/>
+          <TextField id="outlined-basic" fullWidth label="Среднее время восстановления" variant="outlined" sx={{pb: 4}}/>
+          <Stack spacing={2} direction="row" sx={{justifyContent: "flex-end"}}>
+            <Button variant="outlined" onClick={props.onClose}>Отмена</Button>
+            <Button variant="contained">Добавить</Button>
+          </Stack>
         </Box>
       </Modal>
     </div>
