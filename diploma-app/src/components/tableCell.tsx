@@ -33,7 +33,7 @@ function createData(
     };
     }
       
-const rows = [
+export const rows = [
     createData(1, "путь к картинке1", 'Монитор', "Бла бла бла", 3000, 4.3),
     createData(2, "путь к картинке2", 'Корпус', "Системный блок большой", 300, 2.0),
     createData(3, "путь к картинке3", 'Блок питания', "Самый топовый блок питания", 311100, 5.0),
@@ -229,7 +229,7 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
           </IconButton>
         </Tooltip>
       )}
-    <AddDeviceModal state={open} adding={adding} onClose={() => setOpen(false)}/>
+    <AddDeviceModal state={open} adding={adding} onClose={() => setOpen(false)} id={1}/>
     </Toolbar>
   );
 }
@@ -243,6 +243,7 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
         const [filterRows, setRows] = React.useState<Data[]>(rows);
         const [show, setShow] = React.useState(false);
         const [adding, setAdding] = React.useState(false);
+        const [id, setId] = React.useState(1);
         
       
         const handleRequestSort = (
@@ -325,7 +326,7 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
       
         return (
           <Box sx={{ width: '100%' }}>
-            <AddDeviceModal state={show} adding={adding} onClose={() => setShow(false)}/>
+            <AddDeviceModal state={show} adding={adding} onClose={() => setShow(false)} id={id}/>
             <Autocomplete
               id="free-solo"
               freeSolo
@@ -361,7 +362,7 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
                       return (
                         <TableRow
                           hover
-                          onDoubleClick={() => {setShow(true); setAdding(false); console.log(show)}}
+                          onDoubleClick={() => {setShow(true); setAdding(false); setId(row.id)}}
                           role="checkbox"
                           aria-checked={isItemSelected}
                           tabIndex={-1}
