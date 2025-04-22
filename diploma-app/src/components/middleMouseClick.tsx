@@ -3,8 +3,8 @@ import { useEffect } from "react";
 const useMiddleClickSearch = () => {
   useEffect(() => {
     const handleMouseDown = (event: MouseEvent) => {
-      if (event.button === 1) { // Нажатие на колесо мыши
-        event.preventDefault(); // Отключаем стандартное действие
+      if (event.button === 1) {
+        event.preventDefault();
 
         let selectedText = window.getSelection()?.toString().trim() || "";
 
@@ -16,9 +16,9 @@ const useMiddleClickSearch = () => {
         }
 
         if (selectedText) {
-          const searchEngine = "https://www.google.com/search?q="; // Измени на нужный поисковик
+          const searchEngine = "https://www.google.com/search?q=";
           const searchUrl = searchEngine + encodeURIComponent(selectedText);
-          window.open(searchUrl, "_blank"); // Открытие новой вкладки
+          window.open(searchUrl, "_blank");
         }
       }
     };

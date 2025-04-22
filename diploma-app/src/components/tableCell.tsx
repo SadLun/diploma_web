@@ -1,10 +1,13 @@
-import { Autocomplete, Box, Checkbox, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TableSortLabel, TextField, Toolbar, Tooltip, Typography } from '@mui/material';
+import { Autocomplete, Box, Button, Checkbox, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TableSortLabel, TextField, Toolbar, Tooltip, Typography } from '@mui/material';
 import React, { SyntheticEvent, useEffect } from 'react';
 import { visuallyHidden } from '@mui/utils';
 import { alpha } from '@mui/material/styles';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import AddDeviceModal from './add-device-modal';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import { styled } from '@mui/material/styles';
+
 
 interface Data { //Данные должны будут прокидываться из слайса, который получает их из апи
     id: number;
@@ -175,14 +178,23 @@ interface EnhancedTableToolbarProps {
   numSelected: number;
 }
 
-// const handleModalOpen = (adding: boolean) => {
-//   <AddDeviceModal state={true} adding={adding}/>
-// };
-
 function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
   const { numSelected } = props;
   const [adding, setAdding] = React.useState(false);
   const [open, setOpen] = React.useState(false);
+
+  const VisuallyHiddenInput = styled('input')({
+    clip: 'rect(0 0 0 0)',
+    clipPath: 'inset(50%)',
+    height: 1,
+    overflow: 'hidden',
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    whiteSpace: 'nowrap',
+    width: 1,
+  });
+  
 
   return (
     <Toolbar
@@ -190,6 +202,7 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
         {
           pl: { sm: 2 },
           pr: { xs: 1, sm: 1 },
+          justifyContent: 'space-between',
         },
         numSelected > 0 && {
           bgcolor: (theme) =>
@@ -207,14 +220,20 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
           {numSelected} selected
         </Typography>
       ) : (
-        <Typography
-          sx={{ flex: '1 1 100%' }}
-          variant="h6"
-          id="tableTitle"
-          component="div"
+        <Button
+          component="label"
+          role={undefined}
+          variant="contained"
+          tabIndex={-1}
+          startIcon={<CloudUploadIcon />}
         >
-                
-        </Typography>
+          Upload files
+        <VisuallyHiddenInput
+          type="file"
+          onChange={(event) => console.log(event.target.files)}
+          multiple
+        />
+        </Button>
       )}
       {numSelected > 0 ? (
         <Tooltip title="Удалить">
@@ -229,11 +248,13 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
           </IconButton>
         </Tooltip>
       )}
-    <AddDeviceModal state={open} adding={adding} onClose={() => setOpen(false)} id={1}/>
+    <Box sx={{display: "none"}}>
+      <AddDeviceModal state={open} adding={adding} onClose={() => setOpen(false)} id={1}/>
+    </Box>
     </Toolbar>
   );
 }
-// Почему-то стейт не меняется. Не передается нормально новое значение
+
       export default function EnhancedTable() {
         const [order, setOrder] = React.useState<Order>('asc');
         const [orderBy, setOrderBy] = React.useState<keyof Data>('description');
