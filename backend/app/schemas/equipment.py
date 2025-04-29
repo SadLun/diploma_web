@@ -23,6 +23,7 @@ class EquipmentBase(BaseModel):
                 "mtbf_hours": 50000
             }
         }
+        from_attributes = True
 
 class EquipmentCreate(EquipmentBase):
     pass
