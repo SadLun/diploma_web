@@ -28,3 +28,10 @@ DETAIL:  Ключ (category_id)=(0) отсутствует в таблице "ca
 [SQL: UPDATE equipment SET name=%(name)s, category_id=%(category_id)s, mtbf_hours=%(mtbf_hours)s WHERE equipment.id = %(equipment_id)s]
 [parameters: {'name': 'POPAOAPAOAPO', 'category_id': 0, 'mtbf_hours': 255.0, 'equipment_id': 603}]
 (Background on this error at: https://sqlalche.me/e/20/gkpj)
+2025-04-30 14:27:19,327 - INFO - Root endpoint called
+2025-04-30 14:30:43,514 - INFO - Root endpoint called
+2025-04-30 14:38:19,025 - INFO - Root endpoint called
+2025-04-30 14:39:49,452 - INFO - Root endpoint called
+2025-04-30 15:47:00,317 - INFO - Root endpoint called
+2025-04-30 17:05:25,525 - INFO - Root endpoint called
+2025-04-30 17:11:53,456 - INFO - Root endpoint called
