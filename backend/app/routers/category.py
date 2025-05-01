@@ -2,11 +2,17 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app import crud, schemas
+from app.crud.category import get_categories_with_averages
+from app.schemas.category import CategoryWithStats
 
 router = APIRouter(
     prefix="/categories",
     tags=["Categories"]
 )
+
+@router.get("/categories/stats", response_model=list[CategoryWithStats])
+def category_stats(db: Session = Depends(get_db)):
+    return get_categories_with_averages(db)
 
 @router.post("/", response_model=schemas.Category)
 def create_category(category: schemas.CategoryCreate, db: Session = Depends(get_db)):
