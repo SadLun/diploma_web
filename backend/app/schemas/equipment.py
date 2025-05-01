@@ -10,7 +10,7 @@ class EquipmentBase(BaseModel):
     link: Optional[str] = Field(None, description="Ссылка на страницу оборудования")
     category_id: int = Field(..., description="ID категории оборудования")
     mtbf_hours: Optional[float] = Field(None, description="MTBF (Среднее время безотказной работы) в часах")
-
+      
     class Config:
         schema_extra = {
             "example": {
@@ -33,6 +33,10 @@ class Equipment(EquipmentBase):
     gamma_percent_resource: Optional[float] = None
     preservation_period: Optional[float] = None
     mode_coefficient_k: Optional[float] = None
+    mode_coefficient_k_min_temp: Optional[float] = None
+    mode_coefficient_k_max_temp: Optional[float] = None
+    mtbf_exploitation_min_temp: Optional[float] = Field(None, description="MTBF при эксплуатации (по мин. температуре)")
+    mtbf_exploitation_max_temp: Optional[float] = Field(None, description="MTBF при эксплуатации (по макс. температуре)")
 
     class Config:
         orm_mode = True
@@ -44,11 +48,40 @@ class Equipment(EquipmentBase):
             equipment.gamma_percent_resource = equipment.mtbf_hours * log(0.975)
             equipment.preservation_period = (1 / (0.01 * (1 / equipment.mtbf_hours))) * log(0.99)
 
-            # Расчет коэффициента K
-            Ea = 0.28  # Энергия активации
-            k_b = 8.617e-3  # Константа Больцмана
-            T_actual = equipment.min_temperature if equipment.min_temperature is not None else 25  # Температура в °C
-            term = (1 / (T_actual + 273)) - (1 / 298)
-            exponent = (-Ea / k_b) * term
-            equipment.mode_coefficient_k = exp(exponent)
+            Ea = 0.28
+            k_b = 8.617e-3
+
+            def calc_k(temp):
+                try:
+                    T = temp + 273
+                    term = (1 / T) - (1 / 298)
+                    exponent = (-Ea / k_b) * term
+                    return round(exp(exponent), 5)
+                except:
+                    return None
+
+            T_actual = equipment.min_temperature if equipment.min_temperature is not None else 25
+            equipment.mode_coefficient_k = calc_k(T_actual)
+
+            if equipment.min_temperature is not None:
+                equipment.mode_coefficient_k_min_temp = calc_k(equipment.min_temperature)
+
+            if equipment.max_temperature is not None:
+                equipment.mode_coefficient_k_max_temp = calc_k(equipment.max_temperature)
+
+            # Базовая интенсивность отказов
+            lambda_e = 1 / equipment.mtbf_hours if equipment.mtbf_hours else None
+
+            # по min temp
+            if lambda_e and equipment.mode_coefficient_k_min_temp:
+                lambda_ex_min = lambda_e * equipment.mode_coefficient_k_min_temp
+                equipment.mtbf_exploitation_min_temp = round(1 / lambda_ex_min, 3)
+
+            # по max temp
+            if lambda_e and equipment.mode_coefficient_k_max_temp:
+                lambda_ex_max = lambda_e * equipment.mode_coefficient_k_max_temp
+                equipment.mtbf_exploitation_max_temp = round(1 / lambda_ex_max, 3)
+
+
         return equipment
+
