@@ -7,8 +7,22 @@ from app.routers import equipment as equipment_router
 from app.core.exception_handlers import validation_exception_handler, general_exception_handler
 from app.core.logger import logger
 from app.routers import health as health_router
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
+
+origins = [
+    "http://localhost:3000",  # адрес фронта в браузере
+    "http://frontend:80",     # адрес фронта внутри Docker-сети
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 Base.metadata.create_all(bind=engine)
 
