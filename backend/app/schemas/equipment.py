@@ -37,6 +37,10 @@ class Equipment(EquipmentBase):
     mode_coefficient_k_max_temp: Optional[float] = None
     mtbf_exploitation_min_temp: Optional[float] = Field(None, description="MTBF при эксплуатации (по мин. температуре)")
     mtbf_exploitation_max_temp: Optional[float] = Field(None, description="MTBF при эксплуатации (по макс. температуре)")
+    lbd_e:  Optional[float] = None
+    lbd_ex_min:  Optional[float] = None
+    lbd_ex_max:  Optional[float] = None
+
 
     class Config:
         orm_mode = True
@@ -71,16 +75,19 @@ class Equipment(EquipmentBase):
 
             # Базовая интенсивность отказов
             lambda_e = 1 / equipment.mtbf_hours if equipment.mtbf_hours else None
+            equipment.lbd_e = lambda_e
 
             # по min temp
             if lambda_e and equipment.mode_coefficient_k_min_temp:
                 lambda_ex_min = lambda_e * equipment.mode_coefficient_k_min_temp
                 equipment.mtbf_exploitation_min_temp = round(1 / lambda_ex_min, 3)
+                equipment.lbd_ex_min = lambda_ex_min
 
             # по max temp
             if lambda_e and equipment.mode_coefficient_k_max_temp:
                 lambda_ex_max = lambda_e * equipment.mode_coefficient_k_max_temp
                 equipment.mtbf_exploitation_max_temp = round(1 / lambda_ex_max, 3)
+                equipment.lbd_ex_max = lambda_ex_max
 
 
         return equipment
