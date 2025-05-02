@@ -2,8 +2,20 @@ import React, { useEffect } from 'react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Modal from '@mui/material/Modal';
-import { Button, Stack, TextField } from '@mui/material';
+import { Button, MenuItem, Stack, TextField } from '@mui/material';
 import { Data } from './tableCell';
+import { Category } from './tableCell';
+import axios from 'axios';
+
+interface DeviceFormData {
+  name: string;
+  warranty_years: number;
+  min_temperature: number;
+  max_temperature: number;
+  link: string;
+  category_id: number;
+  mtbf_hours: number;
+}
 
 const style = {
     position: 'absolute',
@@ -17,48 +29,132 @@ const style = {
     p: 4,
   };
 
-type Props = {state: boolean, adding: boolean; onClose: () => void; id: number; rows: Data[]};
+type Props = {state: boolean, adding: boolean; onClose: () => void; id: number; rows: Data[]; categories: Category[];};
 
 const AddDeviceModal: React.FC<Props> = (props) => {
-  const [open, setOpen] = React.useState(props.state);
-  const [adding, setAdding] = React.useState(props.adding);
-  const {rows} = props;
-  const localId = props.id;
-  const device = rows.find((row) => row.id === localId);
-
+  const { state, adding, onClose, id, rows, categories } = props;
+  const device = rows.find((row) => row.id === id);
+  const [open, setOpen] = React.useState(state);
+  const [form, setForm] = React.useState<DeviceFormData>({
+    name: "",
+    warranty_years: 0,
+    min_temperature: 0,
+    max_temperature: 0,
+    mtbf_hours: 0,
+    link: "",
+    category_id: 0,
+  });
+  const api = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
-    setOpen(props.state);
-    setAdding(props.adding);
-  }, [props.state, props.adding]);
+    setOpen(state);
+  }, [state]);
+
+  useEffect(() => {
+    if (!adding && device) {
+      const {
+        name,
+        warranty_years,
+        min_temperature,
+        max_temperature,
+        link,
+        category_id,
+        mtbf_hours,
+      } = device;
+
+      setForm({
+        name,
+        warranty_years,
+        min_temperature,
+        max_temperature,
+        link,
+        category_id,
+        mtbf_hours,
+      });
+    } else {
+      // Очистка формы при добавлении
+      setForm({
+        name: "",
+        warranty_years: 0,
+        min_temperature: 0,
+        max_temperature: 0,
+        mtbf_hours: 0,
+        link: "",
+        category_id: 0,
+      });
+    }
+  }, [adding, device]);
+
+  const handleChange = (field: keyof DeviceFormData) => (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const value = field === "name" || field === "link"
+      ? event.target.value
+      : Number(event.target.value);
+    setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSubmit = () => {
+    const payload = {
+      name: form.name,
+      warranty_years: Number(form.warranty_years),
+      min_temperature: Number(form.min_temperature),
+      max_temperature: Number(form.max_temperature),
+      link: form.link,
+      category_id: form.category_id,
+      mtbf_hours: Number(form.mtbf_hours),
+    };
+  
+    const method = adding ? axios.post : axios.put;
+    const url = adding ? `${api}/equipments/` : `${api}/equipments/${id}`;
+  
+    method(url, payload)
+      .then(() => {
+        onClose();
+      })
+      .catch((error) => {
+        console.error("Ошибка при сохранении устройства:", error);
+      });
+  };
 
   return (
     <div>
       <Modal
         open={open}
-        onClose={props.onClose}
+        onClose={onClose}
         aria-labelledby="modal-modal-title"
         aria-describedby="modal-modal-description"
       >
         <Box sx={style}>
-          {adding ? <Typography id="modal-modal-title" variant="h6" component="h2" sx={{pb: 5}}>
-            Добавить устройство
-          </Typography> : <Typography id="modal-modal-title" variant="h6" component="h2" sx={{pb: 5}}>
-            Редактировать устройство
-          </Typography>}
-          <TextField id="outlined-basic" fullWidth label="Наименование" defaultValue={adding ? "" : device?.name ?? ""} variant="outlined" sx={{pb: 2}}/>
-          <TextField id="outlined-basic" fullWidth required label="Гарантийный срок" defaultValue={adding ? "" : device?.warranty_years ?? ""} variant="outlined" sx={{pb: 2}}/>
-          <TextField id="outlined-basic" fullWidth label="Минимальная рабочая температура" defaultValue={adding ? "" : device?.min_temperature ?? ""} variant="outlined" sx={{pb: 2}}/>
-          <TextField id="outlined-basic" fullWidth label="Максимальная рабочая температура" defaultValue={adding ? "" : device?.max_temperature ?? ""} variant="outlined" sx={{pb: 2}}/>
-          <TextField id="outlined-basic" fullWidth label="MTBF" defaultValue={adding ? "" : device?.mtbf_hours ?? ""} variant="outlined" sx={{pb: 2}}/>
-          <TextField id="outlined-basic" fullWidth label="Гамма-процентный ресурс" defaultValue={adding ? "" : device?.gamma_percent_resource ?? ""} variant="outlined" sx={{pb: 2}}/>
-          <TextField id="outlined-basic" fullWidth label="Срок сохраняемости" defaultValue={adding ? "" : device?.preservation_period ?? ""} variant="outlined" sx={{pb: 2}}/>
-          <TextField id="outlined-basic" fullWidth label="Коэффициент режима" defaultValue={adding ? "" : device?.mode_coefficient_k ?? ""} variant="outlined" sx={{pb: 2}}/>
-          <TextField id="outlined-basic" fullWidth label="Ссылка" defaultValue={adding ? "" : device?.link ?? ""} variant="outlined" sx={{pb: 2}}/>
-          <TextField id="outlined-basic" fullWidth label="Категория" defaultValue={adding ? "" : device?.category_id ?? ""} variant="outlined" sx={{pb: 4}}/>
-          <Stack spacing={2} direction="row" sx={{justifyContent: "flex-end"}}>
-            <Button variant="outlined" onClick={props.onClose}>Отмена</Button>
-            {adding ? <Button variant="contained">Добавить</Button> : <Button variant="contained">Сохранить</Button>}
+          <Typography id="modal-modal-title" variant="h6" component="h2" sx={{ pb: 5 }}>
+            {adding ? "Добавить устройство" : "Редактировать устройство"}
+          </Typography>
+          <TextField fullWidth required label="Наименование" value={form.name} onChange={handleChange("name")} sx={{ pb: 2 }} />
+          <TextField fullWidth label="Гарантийный срок" value={form.warranty_years} onChange={handleChange("warranty_years")} sx={{ pb: 2 }} />
+          <TextField fullWidth label="Минимальная рабочая температура" value={form.min_temperature} onChange={handleChange("min_temperature")} sx={{ pb: 2 }} />
+          <TextField fullWidth label="Максимальная рабочая температура" value={form.max_temperature} onChange={handleChange("max_temperature")} sx={{ pb: 2 }} />
+          <TextField fullWidth label="MTBF" value={form.mtbf_hours} onChange={handleChange("mtbf_hours")} sx={{ pb: 2 }} />
+          <TextField fullWidth label="Ссылка" value={form.link} onChange={handleChange("link")} sx={{ pb: 2 }} />
+          <TextField
+          fullWidth
+          select
+          required
+          label="Категория"
+          value={form.category_id}
+          onChange={handleChange("category_id")}
+          sx={{ pb: 4 }}
+          >
+            {categories.map((cat) => (
+              <MenuItem key={cat.id} value={cat.id}>
+                {cat.name}
+              </MenuItem>
+            ))}
+          </TextField>
+          <Stack spacing={2} direction="row" sx={{ justifyContent: "flex-end" }}>
+            <Button variant="outlined" onClick={onClose}>
+              Отмена
+            </Button>
+            <Button variant="contained" onClick={handleSubmit}>{adding ? "Добавить" : "Сохранить"}</Button>
           </Stack>
         </Box>
       </Modal>
