@@ -7,50 +7,24 @@ import AddIcon from '@mui/icons-material/Add';
 import AddDeviceModal from './add-device-modal';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import { styled } from '@mui/material/styles';
+import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
+import * as XLSX from 'xlsx';
+import axios from 'axios';
 
 
-interface Data { //Данные должны будут прокидываться из слайса, который получает их из апи
-    id: number;
-    image: string;
+export interface Data {
     name: string;
-    description: string;
-    price: number;
-    rating: number;
-    }
-      
-function createData(
-    id: number,
-    image: string,
-    name: string,
-    description: string,
-    price: number,
-    rating: number,
-    ): Data {
-    return {
-        id,
-        image,
-        name,
-        description,
-        price,
-        rating,
-    };
-    }
-      
-export const rows = [
-    createData(1, "путь к картинке1", 'Монитор', "Бла бла бла", 3000, 4.3),
-    createData(2, "путь к картинке2", 'Корпус', "Системный блок большой", 300, 2.0),
-    createData(3, "путь к картинке3", 'Блок питания', "Самый топовый блок питания", 311100, 5.0),
-    createData(4, "путь к картинке4", 'Хороший ПК', "Сойдет", 202020, 3.7),
-    createData(5, "путь к картинке5", 'Что-то', "Какое-то", 99, 1.0),
-    createData(6, "путь к картинке6", 'Кто-то', "Неплохо", 999, 2.5),
-    createData(7, "путь к картинке7", 'Камера', "Хорошая камера", 100000, 4.9),
-    createData(8, "путь к картинке8", 'Клавиатура', "Клик-Клик", 1010, 4.6),
-    createData(9, "путь к картинке9", 'Наушники', "Звучат хорошо", 9090, 4.7),
-    createData(10, "путь к картинке10", 'Мышь', "12345667", 1111, 3.3),
-    createData(11, "путь к картинке11", 'Динамики', "Очень громкие", 2990, 3.9),
-    createData(12, "путь к картинке12", 'Монитор 4K', "Разрешение изображения отличное", 30000, 4.9),
-    createData(13, "путь к картинке13", 'Стул игровой', "Качается катается крутится", 19990, 4.1),
-    ];
+    warranty_years: number;
+    min_temperature: number;
+    max_temperature: number;
+    link: string;
+    category_id: number;
+    mtbf_hours: number;
+    id: number;
+    gamma_percent_resource: number;
+    preservation_period: number;
+    mode_coefficient_k: number;
+}  
 
 function descendingComparator<T>(a: T, b: T, orderBy: keyof T) {
     if (b[orderBy] < a[orderBy]) {
@@ -86,34 +60,64 @@ interface HeadCell {
       
 const headCells: readonly HeadCell[] = [
     {
-      id: 'image',
+      id: 'name',
       numeric: false,
       disablePadding: false,
-      label: 'Image',
+      label: 'Наименование',
     },
     {
-        id: 'name',
+        id: 'warranty_years',
         numeric: false,
         disablePadding: false,
-        label: 'Name',
+        label: 'Гарантийный срок',
     },
     {
-        id: 'description',
+        id: 'min_temperature',
         numeric: false,
         disablePadding: false,
-        label: 'Description',
+        label: 'Мин. Рабочая темп',
     },
     {
-        id: 'price',
+        id: 'max_temperature',
         numeric: true,
         disablePadding: false,
-        label: 'Price',
+        label: 'Макс. Рабочая темп',
     },
     {
-        id: 'rating',
+        id: 'mtbf_hours',
         numeric: true,
         disablePadding: false,
-        label: 'Rating',
+        label: 'MTBF (тыс. ч)',
+    },
+    {
+        id: 'gamma_percent_resource',
+        numeric: true,
+        disablePadding: false,
+        label: 'Гамма-процентный ресурс',
+    },
+    {
+        id: 'preservation_period',
+        numeric: true,
+        disablePadding: false,
+        label: 'Срок сохраняемости',
+    },
+    {
+        id: 'mode_coefficient_k',
+        numeric: true,
+        disablePadding: false,
+        label: 'Коэффициент режима',
+    },
+    {
+        id: 'link',
+        numeric: true,
+        disablePadding: false,
+        label: 'Ссылка',
+    },
+    {
+        id: 'category_id',
+        numeric: true,
+        disablePadding: false,
+        label: 'Категория',
     },
     ];
 
@@ -176,10 +180,12 @@ function EnhancedTableHead(props: EnhancedTableProps) {
 
 interface EnhancedTableToolbarProps {
   numSelected: number;
+  rows: Data[];
 }
 
 function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
   const { numSelected } = props;
+  const {rows} = props;
   const [adding, setAdding] = React.useState(false);
   const [open, setOpen] = React.useState(false);
 
@@ -195,6 +201,15 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
     width: 1,
   });
   
+  const handleExport = () => {
+    const data = rows
+
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Sheet1');
+
+    XLSX.writeFile(workbook, 'data.xlsx');
+  };
 
   return (
     <Toolbar
@@ -220,6 +235,7 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
           {numSelected} selected
         </Typography>
       ) : (
+        <Box>
         <Button
           component="label"
           role={undefined}
@@ -227,13 +243,17 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
           tabIndex={-1}
           startIcon={<CloudUploadIcon />}
         >
-          Upload files
+          Импорт
         <VisuallyHiddenInput
           type="file"
           onChange={(event) => console.log(event.target.files)}
           multiple
         />
         </Button>
+        <Button variant="contained" startIcon={<CloudDownloadIcon />} onClick={handleExport}>
+          Экспорт
+        </Button>
+        </Box>
       )}
       {numSelected > 0 ? (
         <Tooltip title="Удалить">
@@ -249,7 +269,7 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
         </Tooltip>
       )}
     <Box sx={{display: "none"}}>
-      <AddDeviceModal state={open} adding={adding} onClose={() => setOpen(false)} id={1}/>
+      <AddDeviceModal state={open} adding={adding} onClose={() => setOpen(false)} id={1} rows={rows}/>
     </Box>
     </Toolbar>
   );
@@ -257,18 +277,33 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
 
       export default function EnhancedTable() {
         const [order, setOrder] = React.useState<Order>('asc');
-        const [orderBy, setOrderBy] = React.useState<keyof Data>('description');
+        const [orderBy, setOrderBy] = React.useState<keyof Data>('name');
         const [selected, setSelected] = React.useState<readonly number[]>([]);
         const [page, setPage] = React.useState(0);
         const [rowsPerPage, setRowsPerPage] = React.useState(5);
-        const [filterRows, setRows] = React.useState<Data[]>(rows);
+        const [rows, setRows] = React.useState<Data[]>([{name: "aboba", warranty_years: 1, min_temperature: 10, max_temperature: 50, link: "aboba", category_id: 5, mtbf_hours: 10, id: 39, gamma_percent_resource: 10, preservation_period: 10, mode_coefficient_k: 10}]);
+        const [filterRows, setFilterRows] = React.useState<Data[]>(rows);
         const [show, setShow] = React.useState(false);
         const [adding, setAdding] = React.useState(false);
         const [id, setId] = React.useState(1);
+
+        const api = import.meta.env.VITE_API_URL;
+
+        useEffect(() => {
+          axios.get<Data[]>(`${api}/equipments/?skip=0&limit=500`)
+            .then((response) => {
+              setRows(response.data);
+              setFilterRows(response.data);
+            })
+            .catch((error) => {
+              console.error('Ошибка при загрузке данных:', error);
+            });
+        }, []);
         
+        console.log(rows);
       
         const handleRequestSort = (
-          event: React.MouseEvent<unknown>,
+          _event: React.MouseEvent<unknown>,
           property: keyof Data,
         ) => {
           const isAsc = orderBy === property && order === 'asc';
@@ -285,7 +320,7 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
           setSelected([]);
         };
       
-        const handleClick = (event: React.MouseEvent<unknown>, id: number) => {
+        const handleClick = (_event: React.MouseEvent<unknown>, id: number) => {
           const selectedIndex = selected.indexOf(id);
           let newSelected: readonly number[] = [];
       
@@ -304,7 +339,7 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
           setSelected(newSelected);
         };
       
-        const handleChangePage = (event: unknown, newPage: number) => {
+        const handleChangePage = (_event: unknown, newPage: number) => {
           setPage(newPage);
         };
       
@@ -313,23 +348,19 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
           setPage(0);
         };
 
-        useEffect(()=>{
-          if (filterRows){
-            setRows(filterRows);
-          } else {
-            setRows(rows)
-          }
-        }, [filterRows])
+        // useEffect(() => {
+        //   setFilterRows(rows);
+        // }, [rows]);
 
-        const handleChange = (e: SyntheticEvent, v: Data | string | null) => {
+        const handleChange = (_e: SyntheticEvent, v: Data | string | null) => {
           if (typeof v === 'string') {
             console.log(v);
             const filteredRows = rows.filter((row) => row.name.toLowerCase().includes(v.toLowerCase()));
-            setRows(filteredRows);
+            setFilterRows(filteredRows);
           } else if (v) {
-            setRows([v]);
+            setFilterRows([v]);
           } else {
-            setRows(rows);
+            setFilterRows(rows);
           }
         }
       
@@ -347,7 +378,7 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
       
         return (
           <Box sx={{ width: '100%' }}>
-            <AddDeviceModal state={show} adding={adding} onClose={() => setShow(false)} id={id}/>
+            <AddDeviceModal state={show} adding={adding} onClose={() => setShow(false)} id={id} rows={rows}/>
             <Autocomplete
               id="free-solo"
               freeSolo
@@ -360,7 +391,7 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
             />
             {filterRows.length > 0 ? 
             <Paper sx={{ width: '100%', mb: 2 }}>
-              <EnhancedTableToolbar numSelected={selected.length} />
+              <EnhancedTableToolbar numSelected={selected.length} rows={rows}/>
               <TableContainer>
                 <Table
                   sx={{ minWidth: 750 }}
@@ -407,12 +438,17 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
                             scope="row"
                             padding="none"
                           >
-                            {row.image}
+                            {row.name}
                           </TableCell>
-                          <TableCell align="right">{row.name}</TableCell>
-                          <TableCell align="right">{row.description}</TableCell>
-                          <TableCell align="right">{row.price}</TableCell>
-                          <TableCell align="right">{row.rating}</TableCell>
+                          <TableCell align="right">{row.warranty_years}</TableCell>
+                          <TableCell align="right">{row.min_temperature}</TableCell>
+                          <TableCell align="right">{row.max_temperature}</TableCell>
+                          <TableCell align="right">{row.mtbf_hours}</TableCell>
+                          <TableCell align="right">{row.gamma_percent_resource}</TableCell>
+                          <TableCell align="right">{row.preservation_period}</TableCell>
+                          <TableCell align="right">{row.mode_coefficient_k}</TableCell>
+                          <TableCell align="right">{row.link}</TableCell>
+                          <TableCell align="right">{row.category_id}</TableCell>
                         </TableRow>
                       );
                     })}

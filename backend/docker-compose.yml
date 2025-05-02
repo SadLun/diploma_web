@@ -35,6 +35,13 @@ services:
       - "8000:8000"
     volumes:
       - .:/app
+  
+  frontend:
+    build: ../diploma-app
+    depends_on:
+      - web
+    ports:
+      - "3000:80"
 
 volumes:
   postgres_data:
