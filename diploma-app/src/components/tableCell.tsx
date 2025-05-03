@@ -10,6 +10,8 @@ import { styled } from '@mui/material/styles';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import * as XLSX from 'xlsx';
 import axios from 'axios';
+import Snackbar from '@mui/material/Snackbar';
+import MuiAlert, { AlertProps } from '@mui/material/Alert';
 
 
 export interface Data {
@@ -24,7 +26,12 @@ export interface Data {
     gamma_percent_resource: number;
     preservation_period: number;
     mode_coefficient_k: number;
-}  
+}
+
+export interface Category {
+  name: string;
+  id: number;
+}
 
 function descendingComparator<T>(a: T, b: T, orderBy: keyof T) {
     if (b[orderBy] < a[orderBy]) {
@@ -181,13 +188,23 @@ function EnhancedTableHead(props: EnhancedTableProps) {
 interface EnhancedTableToolbarProps {
   numSelected: number;
   rows: Data[];
+  selected: number[];
+  categories: Category[];
+  setRows: React.Dispatch<React.SetStateAction<Data[]>>;
+  setFilterRows: React.Dispatch<React.SetStateAction<Data[]>>;
+  setSelected: React.Dispatch<React.SetStateAction<number[]>>;
 }
 
 function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
   const { numSelected } = props;
   const {rows} = props;
+  const {categories} = props;
   const [adding, setAdding] = React.useState(false);
   const [open, setOpen] = React.useState(false);
+  const {selected} = props;
+  const [snackbarOpen, setSnackbarOpen] = React.useState(false);
+  const [snackbarMessage, setSnackbarMessage] = React.useState('');
+  const [snackbarSeverity, setSnackbarSeverity] = React.useState<'success' | 'error'>('success');
 
   const VisuallyHiddenInput = styled('input')({
     clip: 'rect(0 0 0 0)',
@@ -200,6 +217,10 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
     whiteSpace: 'nowrap',
     width: 1,
   });
+
+  const Alert = React.forwardRef<HTMLDivElement, AlertProps>(function Alert(props, ref) {
+    return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
+  });
   
   const handleExport = () => {
     const data = rows
@@ -209,6 +230,28 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Sheet1');
 
     XLSX.writeFile(workbook, 'data.xlsx');
+  };
+
+  const deleteItems = async () => {
+    try {
+      await Promise.all(
+        selected.map((id) => axios.delete(`http://localhost:8000/equipments/${id}`))
+      );
+  
+      const updatedRows = rows.filter((row) => !selected.includes(row.id));
+      props.setRows(updatedRows);
+      props.setFilterRows(updatedRows);
+      props.setSelected([]);
+  
+      setSnackbarMessage('Устройства успешно удалены.');
+      setSnackbarSeverity('success');
+      setSnackbarOpen(true);
+    } catch (error) {
+      setSnackbarMessage('Ошибка при удалении устройств.');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+      console.error('Ошибка при удалении:', error);
+    }
   };
 
   return (
@@ -257,7 +300,7 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
       )}
       {numSelected > 0 ? (
         <Tooltip title="Удалить">
-          <IconButton>
+          <IconButton onClick={deleteItems}>
             <DeleteIcon />
           </IconButton>
         </Tooltip>
@@ -269,8 +312,18 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
         </Tooltip>
       )}
     <Box sx={{display: "none"}}>
-      <AddDeviceModal state={open} adding={adding} onClose={() => setOpen(false)} id={1} rows={rows}/>
+      <AddDeviceModal state={open} adding={adding} onClose={() => setOpen(false)} id={1} rows={rows} categories={categories}/>
     </Box>
+    <Snackbar
+      open={snackbarOpen}
+      autoHideDuration={3000}
+      onClose={() => setSnackbarOpen(false)}
+      anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+    >
+      <Alert onClose={() => setSnackbarOpen(false)} severity={snackbarSeverity} sx={{ width: '100%' }}>
+        {snackbarMessage}
+      </Alert>
+    </Snackbar>
     </Toolbar>
   );
 }
@@ -278,11 +331,12 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
       export default function EnhancedTable() {
         const [order, setOrder] = React.useState<Order>('asc');
         const [orderBy, setOrderBy] = React.useState<keyof Data>('name');
-        const [selected, setSelected] = React.useState<readonly number[]>([]);
+        const [selected, setSelected] = React.useState<number[]>([]);
         const [page, setPage] = React.useState(0);
         const [rowsPerPage, setRowsPerPage] = React.useState(5);
         const [rows, setRows] = React.useState<Data[]>([{name: "aboba", warranty_years: 1, min_temperature: 10, max_temperature: 50, link: "aboba", category_id: 5, mtbf_hours: 10, id: 39, gamma_percent_resource: 10, preservation_period: 10, mode_coefficient_k: 10}]);
         const [filterRows, setFilterRows] = React.useState<Data[]>(rows);
+        const [categories, setCategories] = React.useState<Category[]>([]);
         const [show, setShow] = React.useState(false);
         const [adding, setAdding] = React.useState(false);
         const [id, setId] = React.useState(1);
@@ -290,7 +344,7 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
         const api = import.meta.env.VITE_API_URL;
 
         useEffect(() => {
-          axios.get<Data[]>(`${api}/equipments/?skip=0&limit=500`)
+          axios.get<Data[]>(`${api}/equipments/?skip=0&limit=700`)
             .then((response) => {
               setRows(response.data);
               setFilterRows(response.data);
@@ -299,6 +353,24 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
               console.error('Ошибка при загрузке данных:', error);
             });
         }, []);
+
+        useEffect(() => {
+          axios.get<Category[]>(`${api}/categories/?skip=0&limit=100`)
+          .then((response) => {
+            setCategories(response.data);
+          })
+          .catch((error) => {
+            console.error('Ошибка при загрузке данных:', error);
+          });
+        }, []);
+
+        const categoryMap = React.useMemo(() => {
+          const map: Record<number, string> = {};
+          categories.forEach((cat) => {
+            map[cat.id] = cat.name;
+          });
+          return map;
+        }, [categories]);
         
         console.log(rows);
       
@@ -322,7 +394,7 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
       
         const handleClick = (_event: React.MouseEvent<unknown>, id: number) => {
           const selectedIndex = selected.indexOf(id);
-          let newSelected: readonly number[] = [];
+          let newSelected: number[] = [];
       
           if (selectedIndex === -1) {
             newSelected = newSelected.concat(selected, id);
@@ -378,7 +450,7 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
       
         return (
           <Box sx={{ width: '100%' }}>
-            <AddDeviceModal state={show} adding={adding} onClose={() => setShow(false)} id={id} rows={rows}/>
+            <AddDeviceModal state={show} adding={adding} onClose={() => setShow(false)} id={id} rows={rows} categories={categories}/>
             <Autocomplete
               id="free-solo"
               freeSolo
@@ -391,7 +463,7 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
             />
             {filterRows.length > 0 ? 
             <Paper sx={{ width: '100%', mb: 2 }}>
-              <EnhancedTableToolbar numSelected={selected.length} rows={rows}/>
+              <EnhancedTableToolbar numSelected={selected.length} rows={rows} selected={selected} setRows={setRows} setFilterRows={setFilterRows} setSelected={setSelected} categories={categories}/>
               <TableContainer>
                 <Table
                   sx={{ minWidth: 750 }}
@@ -448,7 +520,7 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
                           <TableCell align="right">{row.preservation_period}</TableCell>
                           <TableCell align="right">{row.mode_coefficient_k}</TableCell>
                           <TableCell align="right">{row.link}</TableCell>
-                          <TableCell align="right">{row.category_id}</TableCell>
+                          <TableCell align="right">{categoryMap[row.category_id] || '—'}</TableCell>
                         </TableRow>
                       );
                     })}
