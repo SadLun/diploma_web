@@ -2,8 +2,7 @@ import { Autocomplete, Box, Button, Checkbox, IconButton, Paper, Table, TableBod
 import React, { SyntheticEvent, useEffect } from 'react';
 import { visuallyHidden } from '@mui/utils';
 import { alpha } from '@mui/material/styles';
-import DeleteIcon from '@mui/icons-material/Delete';
-import AddIcon from '@mui/icons-material/Add';
+import { Add, Delete } from '@mui/icons-material';
 import AddDeviceModal from './add-device-modal';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import { styled } from '@mui/material/styles';
@@ -171,7 +170,7 @@ function EnhancedTableHead(props: EnhancedTableProps) {
                 direction={orderBy === headCell.id ? order : 'asc'}
                 onClick={createSortHandler(headCell.id)}
                 >
-                {headCell.label}
+                <b>{headCell.label}</b>
                 {orderBy === headCell.id ? (
                     <Box component="span" sx={visuallyHidden}>
                     {order === 'desc' ? 'sorted descending' : 'sorted ascending'}
@@ -190,6 +189,7 @@ interface EnhancedTableToolbarProps {
   rows: Data[];
   selected: number[];
   categories: Category[];
+  onSave: () => void;
   setRows: React.Dispatch<React.SetStateAction<Data[]>>;
   setFilterRows: React.Dispatch<React.SetStateAction<Data[]>>;
   setSelected: React.Dispatch<React.SetStateAction<number[]>>;
@@ -300,19 +300,19 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
       )}
       {numSelected > 0 ? (
         <Tooltip title="Удалить">
-          <IconButton onClick={deleteItems}>
-            <DeleteIcon />
+          <IconButton color="error" onClick={deleteItems}>
+            <Delete />
           </IconButton>
         </Tooltip>
       ) : (
         <Tooltip title="Добавить">
-          <IconButton onClick={() => {setAdding(true); setOpen(true)}}>
-            <AddIcon/>
+          <IconButton color="primary" onClick={() => {setAdding(true); setOpen(true)}}>
+            <Add />
           </IconButton>
         </Tooltip>
       )}
     <Box sx={{display: "none"}}>
-      <AddDeviceModal state={open} adding={adding} onClose={() => setOpen(false)} id={1} rows={rows} categories={categories}/>
+      <AddDeviceModal state={open} adding={adding} onClose={() => setOpen(false)} id={1} rows={rows} categories={categories} onSave={props.onSave}/>
     </Box>
     <Snackbar
       open={snackbarOpen}
@@ -333,7 +333,7 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
         const [orderBy, setOrderBy] = React.useState<keyof Data>('name');
         const [selected, setSelected] = React.useState<number[]>([]);
         const [page, setPage] = React.useState(0);
-        const [rowsPerPage, setRowsPerPage] = React.useState(5);
+        const [rowsPerPage, setRowsPerPage] = React.useState(10);
         const [rows, setRows] = React.useState<Data[]>([{name: "aboba", warranty_years: 1, min_temperature: 10, max_temperature: 50, link: "aboba", category_id: 5, mtbf_hours: 10, id: 39, gamma_percent_resource: 10, preservation_period: 10, mode_coefficient_k: 10}]);
         const [filterRows, setFilterRows] = React.useState<Data[]>(rows);
         const [categories, setCategories] = React.useState<Category[]>([]);
@@ -410,6 +410,11 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
           }
           setSelected(newSelected);
         };
+
+        const handleSave = async () => {
+          const response = await axios.get<Data[]>(`${api}/equipments/?skip=0&limit=700`);
+          setRows(response.data);
+        };
       
         const handleChangePage = (_event: unknown, newPage: number) => {
           setPage(newPage);
@@ -449,8 +454,8 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
         );
       
         return (
-          <Box sx={{ width: '100%' }}>
-            <AddDeviceModal state={show} adding={adding} onClose={() => setShow(false)} id={id} rows={rows} categories={categories}/>
+          <Box sx={{ width: '100%', margin: '0 auto', p: 2}}>
+            <AddDeviceModal state={show} adding={adding} onClose={() => setShow(false)} id={id} rows={rows} categories={categories} onSave={handleSave}/>
             <Autocomplete
               id="free-solo"
               freeSolo
@@ -463,7 +468,7 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
             />
             {filterRows.length > 0 ? 
             <Paper sx={{ width: '100%', mb: 2 }}>
-              <EnhancedTableToolbar numSelected={selected.length} rows={rows} selected={selected} setRows={setRows} setFilterRows={setFilterRows} setSelected={setSelected} categories={categories}/>
+              <EnhancedTableToolbar numSelected={selected.length} rows={rows} selected={selected} setRows={setRows} setFilterRows={setFilterRows} setSelected={setSelected} categories={categories} onSave={handleSave}/>
               <TableContainer>
                 <Table
                   sx={{ minWidth: 750 }}
@@ -537,7 +542,7 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
                 </Table>
               </TableContainer>
               <TablePagination
-                rowsPerPageOptions={[5, 10, 25]}
+                rowsPerPageOptions={[10, 25, 30]}
                 component="div"
                 count={filterRows.length}
                 rowsPerPage={rowsPerPage}

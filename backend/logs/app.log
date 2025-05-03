@@ -42,3 +42,4 @@ DETAIL:  Ключ (category_id)=(0) отсутствует в таблице "ca
 2025-05-01 13:17:41,697 - ERROR - Unexpected error: Column expression, FROM clause, or other columns clause element expected, got <class 'app.schemas.equipment.Equipment'>.
 2025-05-01 13:22:47,536 - ERROR - Unexpected error: type object 'Equipment' has no attribute 'from_orm_with_calculations'
 2025-05-02 13:21:06,072 - INFO - Root endpoint called
+2025-05-03 10:20:18,752 - INFO - Root endpoint called

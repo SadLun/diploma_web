@@ -49,8 +49,8 @@ class Equipment(EquipmentBase):
     def from_orm_with_calculations(cls, obj):
         equipment = cls.from_orm(obj)
         if equipment.mtbf_hours and equipment.mtbf_hours > 0:
-            equipment.gamma_percent_resource = equipment.mtbf_hours * log(0.975)
-            equipment.preservation_period = (1 / (0.01 * (1 / equipment.mtbf_hours))) * log(0.99)
+            equipment.gamma_percent_resource = -equipment.mtbf_hours * log(0.975)
+            equipment.preservation_period = -(1 / (0.01 * (1 / equipment.mtbf_hours))) * log(0.99)
 
             Ea = 0.28
             k_b = 8.617e-3

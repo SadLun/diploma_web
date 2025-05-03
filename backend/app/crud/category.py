@@ -34,6 +34,10 @@ def get_categories_with_averages(db: Session) -> List[CategoryWithStats]:
             avg_mode_coefficient_k_max_temp=avg("mode_coefficient_k_max_temp"),
             avg_mtbf_exploitation_min_temp=avg("mtbf_exploitation_min_temp"),
             avg_mtbf_exploitation_max_temp=avg("mtbf_exploitation_max_temp"),
+            avg_lbd_ex_min=avg("lbd_ex_min"),
+            avg_lbd_ex_max=avg("lbd_ex_max")
+
+            
         ))
 
     return result
