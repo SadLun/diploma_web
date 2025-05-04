@@ -9,7 +9,7 @@ function App() {
   useMiddleClickSearch();
   return (
     <Provider store={store}>
-      <Container maxWidth="md">
+      <Container maxWidth="lg">
         <Typography component="h1" variant="h2" align="center">Device DataBase</Typography>
         <NavTabs />
       </Container>

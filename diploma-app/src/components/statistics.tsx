@@ -26,6 +26,8 @@ const chartFields = [
   { key: 'avg_mode_coefficient_k_max_temp', label: 'Коэф. режима при макс. темп.' },
   { key: 'avg_mtbf_exploitation_min_temp', label: 'MTBF при мин. темп. (тыс. часов)' },
   { key: 'avg_mtbf_exploitation_max_temp', label: 'MTBF при макс. темп. (тыс. часов)' },
+  { key: 'avg_lbd_ex_min', label: 'Интенсивность отказов при мин. темп.' },
+  { key: 'avg_lbd_ex_max', label: 'Интенсивность отказов при макс. темп.' },
 ];
 
 const Statistics: React.FC = () => {
@@ -43,7 +45,7 @@ const Statistics: React.FC = () => {
     }, []);
 
     return (
-      <Stack spacing={4} sx={{ width: '100%', maxWidth: 1200, margin: '0 auto', p: 2 }}>
+      <Stack spacing={4} sx={{ width: '100%', maxWidth: 1200, margin: '0 auto', pt: 2 }}>
       {chartFields.map(({ key, label }) => (
           <Card variant="outlined">
             <CardContent>
@@ -76,14 +78,6 @@ const Statistics: React.FC = () => {
           </Card>
       ))}
       </Stack>
-          // <BarChart
-          //   dataset={stats}
-          //   xAxis={[{ scaleType: 'band', dataKey: 'name', tickPlacement: 'middle', tickLabelPlacement: 'middle', tickLabelInterval: 'auto', tickLabelStyle: {
-          //     angle: 45,
-          //   },}]}
-          //   series={[{ dataKey: 'avg_mtbf_hours', label: 'Среднее значение MTBF (тыс. часов)' }]}
-          //   height={500}
-          // />
       );
 }
 
