@@ -510,20 +510,17 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
         //   setFilterRows(rows);
         // }, [rows]);
 
-        const handleChange = (_e: SyntheticEvent, v: Data | string | null) => {
-          if (typeof v === 'string') {
-            console.log(v);
-            const filteredRows = rows.filter((row) => row.name.toLowerCase().includes(v.toLowerCase()));
-            setFilterRows(filteredRows);
-            setPage(0);
-          } else if (v) {
-            setFilterRows([v]);
-            setPage(0);
-          } else {
+        const handleInputChange = (_e: SyntheticEvent, value: string) => {
+          if (!value) {
             setFilterRows(rows);
-            setPage(0);
+          } else {
+            const filteredRows = rows.filter((row) =>
+              row.name.toLowerCase().includes(value.toLowerCase())
+            );
+            setFilterRows(filteredRows);
           }
-        }
+          setPage(0);
+        };
       
         // Avoid a layout jump when reaching the last page with empty rows.
         const emptyRows =
@@ -537,13 +534,13 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
           [order, orderBy, page, rowsPerPage, filterRows],
         );
 
-        const filterOptions = React.useMemo(() => {
-          return (options: Data[], { inputValue }: { inputValue: string }) => {
-            return options
-              .filter((option) => option.name.toLowerCase().includes(inputValue.toLowerCase()))
-              .slice(0, 25);
-          };
-        }, [rows]);
+        const filterOptions = (options: Data[], { inputValue }: { inputValue: string }) => {
+          const normalizedInput = inputValue.trim().toLowerCase();
+          return options
+            .filter((option) => option.name?.toLowerCase().includes(normalizedInput))
+            .slice(0, 25);
+        };
+        
       
         return (
           <Box sx={{ width: '100%', margin: '0', pt: 2}}>
@@ -552,11 +549,10 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
               id="free-solo"
               freeSolo
               filterOptions={filterOptions}
-              onChange={handleChange}
+              onInputChange={handleInputChange}
               options={rows}
-              noOptionsText="Ничего не найдено"
               clearOnEscape
-              getOptionLabel={(rows) => (typeof rows === 'string' ? rows : rows.name || '')}
+              getOptionLabel={(option) => typeof option === 'string' ? option : option.name}
               renderInput={(params) => <TextField {...params} label="Поиск" />}
               sx={{pb: 2}}
             />
