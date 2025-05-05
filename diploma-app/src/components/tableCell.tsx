@@ -1,5 +1,5 @@
-import { Autocomplete, Box, Button, Checkbox, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TableSortLabel, TextField, Toolbar, Tooltip, Typography } from '@mui/material';
-import React, { SyntheticEvent, useEffect } from 'react';
+import { Autocomplete, Box, Button, Checkbox, Chip, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TableSortLabel, TextField, Toolbar, Tooltip, Typography } from '@mui/material';
+import React, { useEffect } from 'react';
 import { visuallyHidden } from '@mui/utils';
 import { alpha } from '@mui/material/styles';
 import { Add, Delete } from '@mui/icons-material';
@@ -421,6 +421,13 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
         const [show, setShow] = React.useState(false);
         const [adding, setAdding] = React.useState(false);
         const [id, setId] = React.useState(1);
+        const [searchTerms, setSearchTerms] = React.useState<string[]>([]);
+        const [query, setQuery] = React.useState('');
+        const optionList = React.useMemo(() => {
+          const devNames = rows.map((r) => r.name).filter(Boolean) as string[];
+          const catNames = categories.map((c) => c.name).filter(Boolean);
+          return [...new Set([...devNames, ...catNames].map((n) => n.trim()))];
+        }, [rows, categories]);
 
         const api = import.meta.env.VITE_API_URL;
 
@@ -506,21 +513,21 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
           setPage(0);
         };
 
-        // useEffect(() => {
-        //   setFilterRows(rows);
-        // }, [rows]);
-
-        const handleInputChange = (_e: SyntheticEvent, value: string) => {
-          if (!value) {
+        useEffect(() => {
+          if (searchTerms.length === 0) {
             setFilterRows(rows);
-          } else {
-            const filteredRows = rows.filter((row) =>
-              row.name.toLowerCase().includes(value.toLowerCase())
-            );
-            setFilterRows(filteredRows);
+            return;
           }
+        
+          const filtered = rows.filter((row) => {
+            const rowName = row.name.toLowerCase();
+            const categoryName = categoryMap[row.category_id]?.toLowerCase() || '';
+            return searchTerms.some((term) => rowName.includes(term) || categoryName.includes(term));
+          });
+        
+          setFilterRows(filtered);
           setPage(0);
-        };
+        }, [searchTerms, rows, categoryMap]);
       
         // Avoid a layout jump when reaching the last page with empty rows.
         const emptyRows =
@@ -534,10 +541,12 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
           [order, orderBy, page, rowsPerPage, filterRows],
         );
 
-        const filterOptions = (options: Data[], { inputValue }: { inputValue: string }) => {
-          const normalizedInput = inputValue.trim().toLowerCase();
-          return options
-            .filter((option) => option.name?.toLowerCase().includes(normalizedInput))
+        const filterOptions = (_opts: string[], { inputValue }: { inputValue: string }) => {
+          const val = inputValue.trim().toLowerCase();
+          if (!val) return optionList.slice(0, 25);
+        
+          return optionList
+            .filter((txt) => txt.toLowerCase().includes(val))
             .slice(0, 25);
         };
         
@@ -549,13 +558,34 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
               id="free-solo"
               freeSolo
               filterOptions={filterOptions}
-              onInputChange={handleInputChange}
-              options={rows}
+              inputValue={query}
+              onInputChange={(_, value) => setQuery(value)}
+              onChange={(_, value) => {                   // сработает при выборе или Enter
+                if (!value) return;
+                const term = value.toString().trim().toLowerCase();
+                if (term && !searchTerms.includes(term)) {
+                  setSearchTerms((prev) => [...prev, term]);  // кидаем в фильтры
+                }
+                setQuery('');                                // чистим поле
+              }}
+              options={optionList}
               clearOnEscape
-              getOptionLabel={(option) => typeof option === 'string' ? option : option.name}
+              getOptionLabel={(opt) => opt}
               renderInput={(params) => <TextField {...params} label="Поиск" />}
               sx={{pb: 2}}
+              filterSelectedOptions
             />
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', pb: 2 }}>
+              {searchTerms.map((term) => (
+                <Chip
+                  key={term}
+                  label={term}
+                  onDelete={() => setSearchTerms((prev) => prev.filter((t) => t !== term))}
+                  color="primary"
+                />
+              ))}
+              <Button onClick={() => setSearchTerms([])}>Сбросить поиск</Button>
+            </Box>
             {filterRows.length > 0 ? 
             <Paper variant="outlined" sx={{ width: '100%', mb: 2 }}>
               <EnhancedTableToolbar numSelected={selected.length} rows={rows} selected={selected} setRows={setRows} setFilterRows={setFilterRows} setSelected={setSelected} categories={categories} onSave={handleSave}/>
