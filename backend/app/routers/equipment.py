@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app import crud, schemas
@@ -11,6 +11,9 @@ import io
 from fastapi.responses import StreamingResponse
 import pandas as pd
 from app.database import get_db
+from app.models.equipment import Equipment as EquipmentModel
+from app.schemas.equipment import Equipment as EquipmentSchema
+from math import exp
 
 router = APIRouter(
     prefix="/equipments",
@@ -166,3 +169,40 @@ def import_equipments_from_excel(file: UploadFile = File(...), db: Session = Dep
     }
 
 
+@router.get("/equipments/{equipment_id}/calculate_mtbf_exploitation/")
+def calculate_mtbf_exploitation(
+    equipment_id: int,
+    temperature: float = Query(..., description="Температура эксплуатации в градусах Цельсия"),
+    db: Session = Depends(get_db)
+):
+    db_equipment = db.query(EquipmentModel).filter(EquipmentModel.id == equipment_id).first()
+    if not db_equipment:
+        raise HTTPException(status_code=404, detail="Оборудование не найдено")
+
+    # Получаем экземпляр схемы с расчётными полями
+    equipment = EquipmentSchema.from_orm_with_calculations(db_equipment)
+
+    # Используем уже имеющуюся функцию `calc_k`
+    Ea = 0.28
+    k_b = 8.617e-3
+    try:
+        T = temperature + 273
+        term = (1 / T) - (1 / 298)
+        exponent = (-Ea / k_b) * term
+        Kt = round(exp(exponent), 5)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Невозможно вычислить коэффициент K")
+
+    # Вычисляем интенсивность и MTBF
+    if not equipment.mtbf_hours:
+        raise HTTPException(status_code=400, detail="Отсутствует базовый MTBF")
+
+    lambda_e = 1 / equipment.mtbf_hours
+    lambda_ex = lambda_e * Kt
+    mtbf_ex = 1 / lambda_ex
+
+    return {
+        'id': equipment.id,
+        "lambda_exploitation": round(lambda_ex, 6),
+        "mtbf_exploitation": round(mtbf_ex, 3)
+    }
