@@ -18,6 +18,9 @@ class CategoryWithStats(BaseModel):
     avg_mode_coefficient_k_max_temp: Optional[float] = None
     avg_mtbf_exploitation_min_temp: Optional[float] = None
     avg_mtbf_exploitation_max_temp: Optional[float] = None
+    avg_lbd_ex_min: Optional[float] = None
+    avg_lbd_ex_max: Optional[float] = None
+    
 
 
 

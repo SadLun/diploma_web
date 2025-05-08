@@ -29,10 +29,10 @@ const style = {
     p: 4,
   };
 
-type Props = {state: boolean, adding: boolean; onClose: () => void; id: number; rows: Data[]; categories: Category[];};
+type Props = {state: boolean, adding: boolean; onClose: () => void; id: number; rows: Data[]; categories: Category[]; onSave: () => void;};
 
 const AddDeviceModal: React.FC<Props> = (props) => {
-  const { state, adding, onClose, id, rows, categories } = props;
+  const { state, adding, onClose, id, rows, categories, onSave } = props;
   const device = rows.find((row) => row.id === id);
   const [open, setOpen] = React.useState(state);
   const [form, setForm] = React.useState<DeviceFormData>({
@@ -45,6 +45,7 @@ const AddDeviceModal: React.FC<Props> = (props) => {
     category_id: 0,
   });
   const api = import.meta.env.VITE_API_URL;
+  const isFormValid = form.name.trim() !== "" && form.category_id > 0;
 
   useEffect(() => {
     setOpen(state);
@@ -111,6 +112,7 @@ const AddDeviceModal: React.FC<Props> = (props) => {
     method(url, payload)
       .then(() => {
         onClose();
+        onSave();
       })
       .catch((error) => {
         console.error("Ошибка при сохранении устройства:", error);
@@ -129,7 +131,7 @@ const AddDeviceModal: React.FC<Props> = (props) => {
           <Typography id="modal-modal-title" variant="h6" component="h2" sx={{ pb: 5 }}>
             {adding ? "Добавить устройство" : "Редактировать устройство"}
           </Typography>
-          <TextField fullWidth required label="Наименование" value={form.name} onChange={handleChange("name")} sx={{ pb: 2 }} />
+          <TextField fullWidth required label="Наименование" value={form.name} onChange={handleChange("name")} sx={{ pb: 2 }} error={form.name.trim() === ""} helperText={form.name.trim() === "" ? "Обязательное поле" : ""}/>
           <TextField fullWidth label="Гарантийный срок" value={form.warranty_years} onChange={handleChange("warranty_years")} sx={{ pb: 2 }} />
           <TextField fullWidth label="Минимальная рабочая температура" value={form.min_temperature} onChange={handleChange("min_temperature")} sx={{ pb: 2 }} />
           <TextField fullWidth label="Максимальная рабочая температура" value={form.max_temperature} onChange={handleChange("max_temperature")} sx={{ pb: 2 }} />
@@ -143,6 +145,8 @@ const AddDeviceModal: React.FC<Props> = (props) => {
           value={form.category_id}
           onChange={handleChange("category_id")}
           sx={{ pb: 4 }}
+          error={form.category_id <= 0}
+          helperText={form.category_id <= 0 ? "Обязательное поле" : ""}
           >
             {categories.map((cat) => (
               <MenuItem key={cat.id} value={cat.id}>
@@ -154,7 +158,7 @@ const AddDeviceModal: React.FC<Props> = (props) => {
             <Button variant="outlined" onClick={onClose}>
               Отмена
             </Button>
-            <Button variant="contained" onClick={handleSubmit}>{adding ? "Добавить" : "Сохранить"}</Button>
+            <Button variant="contained" onClick={handleSubmit} disabled={!isFormValid}>{adding ? "Добавить" : "Сохранить"}</Button>
           </Stack>
         </Box>
       </Modal>

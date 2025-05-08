@@ -1,9 +1,8 @@
-import { Autocomplete, Box, Button, Checkbox, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TableSortLabel, TextField, Toolbar, Tooltip, Typography } from '@mui/material';
-import React, { SyntheticEvent, useEffect } from 'react';
+import { Autocomplete, Box, Button, Checkbox, Chip, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TableSortLabel, TextField, Toolbar, Tooltip, Typography } from '@mui/material';
+import React, { useEffect } from 'react';
 import { visuallyHidden } from '@mui/utils';
 import { alpha } from '@mui/material/styles';
-import DeleteIcon from '@mui/icons-material/Delete';
-import AddIcon from '@mui/icons-material/Add';
+import { Add, Delete } from '@mui/icons-material';
 import AddDeviceModal from './add-device-modal';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import { styled } from '@mui/material/styles';
@@ -26,6 +25,12 @@ export interface Data {
     gamma_percent_resource: number;
     preservation_period: number;
     mode_coefficient_k: number;
+    mode_coefficient_k_min_temp: number;
+    mode_coefficient_k_max_temp: number;
+    mtbf_exploitation_min_temp: number;
+    mtbf_exploitation_max_temp: number;
+    lbd_ex_min: number;
+    lbd_ex_max: number;
 }
 
 export interface Category {
@@ -97,6 +102,18 @@ const headCells: readonly HeadCell[] = [
         label: 'MTBF (тыс. ч)',
     },
     {
+        id: 'mtbf_exploitation_min_temp',
+        numeric: true,
+        disablePadding: false,
+        label: 'MTBF мин. темп. (тыс. ч)',
+    },
+    {
+        id: 'mtbf_exploitation_max_temp',
+        numeric: true,
+        disablePadding: false,
+        label: 'MTBF макс. темп. (тыс. ч)',
+    },
+    {
         id: 'gamma_percent_resource',
         numeric: true,
         disablePadding: false,
@@ -113,6 +130,30 @@ const headCells: readonly HeadCell[] = [
         numeric: true,
         disablePadding: false,
         label: 'Коэффициент режима',
+    },
+    {
+        id: 'mode_coefficient_k_min_temp',
+        numeric: true,
+        disablePadding: false,
+        label: 'Коэффициент режима мин. темп.',
+    },
+    {
+        id: 'mode_coefficient_k_max_temp',
+        numeric: true,
+        disablePadding: false,
+        label: 'Коэффициент режима макс. темп.',
+    },
+    {
+        id: 'lbd_ex_min',
+        numeric: true,
+        disablePadding: false,
+        label: 'Интенсивность отказов мин. темп.',
+    },
+    {
+        id: 'lbd_ex_max',
+        numeric: true,
+        disablePadding: false,
+        label: 'Интенсивность отказов макс. темп.',
     },
     {
         id: 'link',
@@ -147,7 +188,7 @@ function EnhancedTableHead(props: EnhancedTableProps) {
       
     return (
         <TableHead>
-        <TableRow>
+        <TableRow sx={{ height: 60 }}>
             <TableCell padding="checkbox">
             <Checkbox
                 color="primary"
@@ -165,13 +206,17 @@ function EnhancedTableHead(props: EnhancedTableProps) {
                 align={"right"}
                 padding={headCell.disablePadding ? 'none' : 'normal'}
                 sortDirection={orderBy === headCell.id ? order : false}
+                sx={{
+                  minWidth: 150,
+                  whiteSpace: 'normal',
+                }}
             >
                 <TableSortLabel
                 active={orderBy === headCell.id}
                 direction={orderBy === headCell.id ? order : 'asc'}
                 onClick={createSortHandler(headCell.id)}
                 >
-                {headCell.label}
+                <b>{headCell.label}</b>
                 {orderBy === headCell.id ? (
                     <Box component="span" sx={visuallyHidden}>
                     {order === 'desc' ? 'sorted descending' : 'sorted ascending'}
@@ -190,6 +235,7 @@ interface EnhancedTableToolbarProps {
   rows: Data[];
   selected: number[];
   categories: Category[];
+  onSave: () => void;
   setRows: React.Dispatch<React.SetStateAction<Data[]>>;
   setFilterRows: React.Dispatch<React.SetStateAction<Data[]>>;
   setSelected: React.Dispatch<React.SetStateAction<number[]>>;
@@ -254,6 +300,40 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
     }
   };
 
+  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+  
+    const formData = new FormData();
+    formData.append('file', file);
+  
+    try {
+      await axios.post(`${import.meta.env.VITE_API_URL}/equipments/import/`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+  
+      setSnackbarMessage('Файл успешно импортирован.');
+      setSnackbarSeverity('success');
+      setSnackbarOpen(true);
+  
+      // Обновляем данные после импорта
+      const response = await axios.get<Data[]>(`${import.meta.env.VITE_API_URL}/equipments/?skip=0&limit=700`);
+      props.setRows(response.data);
+      props.setFilterRows(response.data);
+  
+    } catch (error) {
+      console.error('Ошибка при импорте:', error);
+      setSnackbarMessage('Ошибка при импорте файла.');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+    }
+  
+    // Очистить input, чтобы можно было загрузить тот же файл снова
+    event.target.value = '';
+  };
+
   return (
     <Toolbar
       sx={[
@@ -279,18 +359,19 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
         </Typography>
       ) : (
         <Box>
-        <Button
+          <Button
           component="label"
           role={undefined}
           variant="contained"
           tabIndex={-1}
           startIcon={<CloudUploadIcon />}
+          sx={{mr: 2}}
         >
           Импорт
         <VisuallyHiddenInput
           type="file"
-          onChange={(event) => console.log(event.target.files)}
-          multiple
+          onChange={handleImport}
+          accept=".xlsx"
         />
         </Button>
         <Button variant="contained" startIcon={<CloudDownloadIcon />} onClick={handleExport}>
@@ -300,19 +381,19 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
       )}
       {numSelected > 0 ? (
         <Tooltip title="Удалить">
-          <IconButton onClick={deleteItems}>
-            <DeleteIcon />
+          <IconButton color="error" onClick={deleteItems}>
+            <Delete />
           </IconButton>
         </Tooltip>
       ) : (
         <Tooltip title="Добавить">
-          <IconButton onClick={() => {setAdding(true); setOpen(true)}}>
-            <AddIcon/>
+          <IconButton color="primary" onClick={() => {setAdding(true); setOpen(true)}}>
+            <Add />
           </IconButton>
         </Tooltip>
       )}
     <Box sx={{display: "none"}}>
-      <AddDeviceModal state={open} adding={adding} onClose={() => setOpen(false)} id={1} rows={rows} categories={categories}/>
+      <AddDeviceModal state={open} adding={adding} onClose={() => setOpen(false)} id={1} rows={rows} categories={categories} onSave={props.onSave}/>
     </Box>
     <Snackbar
       open={snackbarOpen}
@@ -333,13 +414,20 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
         const [orderBy, setOrderBy] = React.useState<keyof Data>('name');
         const [selected, setSelected] = React.useState<number[]>([]);
         const [page, setPage] = React.useState(0);
-        const [rowsPerPage, setRowsPerPage] = React.useState(5);
-        const [rows, setRows] = React.useState<Data[]>([{name: "aboba", warranty_years: 1, min_temperature: 10, max_temperature: 50, link: "aboba", category_id: 5, mtbf_hours: 10, id: 39, gamma_percent_resource: 10, preservation_period: 10, mode_coefficient_k: 10}]);
+        const [rowsPerPage, setRowsPerPage] = React.useState(10);
+        const [rows, setRows] = React.useState<Data[]>([]);
         const [filterRows, setFilterRows] = React.useState<Data[]>(rows);
         const [categories, setCategories] = React.useState<Category[]>([]);
         const [show, setShow] = React.useState(false);
         const [adding, setAdding] = React.useState(false);
         const [id, setId] = React.useState(1);
+        const [searchTerms, setSearchTerms] = React.useState<string[]>([]);
+        const [query, setQuery] = React.useState('');
+        const optionList = React.useMemo(() => {
+          const devNames = rows.map((r) => r.name).filter(Boolean) as string[];
+          const catNames = categories.map((c) => c.name).filter(Boolean);
+          return [...new Set([...devNames, ...catNames].map((n) => n.trim()))];
+        }, [rows, categories]);
 
         const api = import.meta.env.VITE_API_URL;
 
@@ -410,6 +498,11 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
           }
           setSelected(newSelected);
         };
+
+        const handleSave = async () => {
+          const response = await axios.get<Data[]>(`${api}/equipments/?skip=0&limit=700`);
+          setRows(response.data);
+        };
       
         const handleChangePage = (_event: unknown, newPage: number) => {
           setPage(newPage);
@@ -420,21 +513,21 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
           setPage(0);
         };
 
-        // useEffect(() => {
-        //   setFilterRows(rows);
-        // }, [rows]);
-
-        const handleChange = (_e: SyntheticEvent, v: Data | string | null) => {
-          if (typeof v === 'string') {
-            console.log(v);
-            const filteredRows = rows.filter((row) => row.name.toLowerCase().includes(v.toLowerCase()));
-            setFilterRows(filteredRows);
-          } else if (v) {
-            setFilterRows([v]);
-          } else {
+        useEffect(() => {
+          if (searchTerms.length === 0) {
             setFilterRows(rows);
+            return;
           }
-        }
+        
+          const filtered = rows.filter((row) => {
+            const rowName = row.name.toLowerCase();
+            const categoryName = categoryMap[row.category_id]?.toLowerCase() || '';
+            return searchTerms.some((term) => rowName.includes(term) || categoryName.includes(term));
+          });
+        
+          setFilterRows(filtered);
+          setPage(0);
+        }, [searchTerms, rows, categoryMap]);
       
         // Avoid a layout jump when reaching the last page with empty rows.
         const emptyRows =
@@ -447,28 +540,59 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
               .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage),
           [order, orderBy, page, rowsPerPage, filterRows],
         );
+
+        const filterOptions = (_opts: string[], { inputValue }: { inputValue: string }) => {
+          const val = inputValue.trim().toLowerCase();
+          if (!val) return optionList.slice(0, 25);
+        
+          return optionList
+            .filter((txt) => txt.toLowerCase().includes(val))
+            .slice(0, 25);
+        };
+        
       
         return (
-          <Box sx={{ width: '100%' }}>
-            <AddDeviceModal state={show} adding={adding} onClose={() => setShow(false)} id={id} rows={rows} categories={categories}/>
+          <Box sx={{ width: '100%', margin: '0', pt: 2}}>
+            <AddDeviceModal state={show} adding={adding} onClose={() => setShow(false)} id={id} rows={rows} categories={categories} onSave={handleSave}/>
             <Autocomplete
               id="free-solo"
               freeSolo
-              onChange={handleChange}
-              options={rows}
-              noOptionsText="Ничего не найдено"
+              filterOptions={filterOptions}
+              inputValue={query}
+              onInputChange={(_, value) => setQuery(value)}
+              onChange={(_, value) => {                   // сработает при выборе или Enter
+                if (!value) return;
+                const term = value.toString().trim().toLowerCase();
+                if (term && !searchTerms.includes(term)) {
+                  setSearchTerms((prev) => [...prev, term]);  // кидаем в фильтры
+                }
+                setQuery('');                                // чистим поле
+              }}
+              options={optionList}
               clearOnEscape
-              getOptionLabel={(rows) => (typeof rows === 'string' ? rows : rows.name || '')}
+              getOptionLabel={(opt) => opt}
               renderInput={(params) => <TextField {...params} label="Поиск" />}
+              sx={{pb: 2}}
+              filterSelectedOptions
             />
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', pb: 2 }}>
+              {searchTerms.map((term) => (
+                <Chip
+                  key={term}
+                  label={term}
+                  onDelete={() => setSearchTerms((prev) => prev.filter((t) => t !== term))}
+                  color="primary"
+                />
+              ))}
+              <Button onClick={() => setSearchTerms([])}>Сбросить поиск</Button>
+            </Box>
             {filterRows.length > 0 ? 
-            <Paper sx={{ width: '100%', mb: 2 }}>
-              <EnhancedTableToolbar numSelected={selected.length} rows={rows} selected={selected} setRows={setRows} setFilterRows={setFilterRows} setSelected={setSelected} categories={categories}/>
-              <TableContainer>
+            <Paper variant="outlined" sx={{ width: '100%', mb: 2 }}>
+              <EnhancedTableToolbar numSelected={selected.length} rows={rows} selected={selected} setRows={setRows} setFilterRows={setFilterRows} setSelected={setSelected} categories={categories} onSave={handleSave}/>
+              <TableContainer sx={{ maxHeight: '75vh', overflowX: 'auto' }}>
                 <Table
-                  sx={{ minWidth: 750 }}
+                  sx={{ minWidth: 900 }}
                   aria-labelledby="tableTitle"
-                  size={'medium'}
                 >
                   <EnhancedTableHead
                     numSelected={selected.length}
@@ -492,7 +616,7 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
                           tabIndex={-1}
                           key={row.id}
                           selected={isItemSelected}
-                          sx={{ cursor: 'pointer' }}
+                          sx={{ cursor: 'pointer',  height: 60 }}
                         >
                           <TableCell padding="checkbox">
                             <Checkbox
@@ -509,18 +633,45 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
                             id={labelId}
                             scope="row"
                             padding="none"
+                            sx={{
+                              maxWidth: 150,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                              verticalAlign: 'middle',
+                            }}
                           >
                             {row.name}
                           </TableCell>
-                          <TableCell align="right">{row.warranty_years}</TableCell>
-                          <TableCell align="right">{row.min_temperature}</TableCell>
-                          <TableCell align="right">{row.max_temperature}</TableCell>
-                          <TableCell align="right">{row.mtbf_hours}</TableCell>
-                          <TableCell align="right">{row.gamma_percent_resource}</TableCell>
-                          <TableCell align="right">{row.preservation_period}</TableCell>
-                          <TableCell align="right">{row.mode_coefficient_k}</TableCell>
-                          <TableCell align="right">{row.link}</TableCell>
-                          <TableCell align="right">{categoryMap[row.category_id] || '—'}</TableCell>
+                          <TableCell align="right" sx={{ minWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', verticalAlign: 'middle', }}>{row.warranty_years !== null ? row.warranty_years : '—'}</TableCell>
+                          <TableCell align="right" sx={{ minWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', verticalAlign: 'middle', }}>{row.min_temperature !== null ? row.min_temperature : '—'}</TableCell>
+                          <TableCell align="right" sx={{ minWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', verticalAlign: 'middle', }}>{row.max_temperature !== null ? row.max_temperature : '—'}</TableCell>
+                          <TableCell align="right" sx={{ minWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', verticalAlign: 'middle', }}>{row.mtbf_hours !== null ? row.mtbf_hours : '—'}</TableCell>
+                          <TableCell align="right" sx={{ minWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', verticalAlign: 'middle', }}>{row.mtbf_exploitation_min_temp !== null ? row.mtbf_exploitation_min_temp : '—'}</TableCell>
+                          <TableCell align="right" sx={{ minWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', verticalAlign: 'middle', }}>{row.mtbf_exploitation_max_temp !== null ? row.mtbf_exploitation_max_temp : '—'}</TableCell>
+                          <TableCell align="right" sx={{ minWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', verticalAlign: 'middle', }}>{row.gamma_percent_resource !== null ? row.gamma_percent_resource : '—'}</TableCell>
+                          <TableCell align="right" sx={{ minWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', verticalAlign: 'middle', }}>{row.preservation_period !== null ? row.preservation_period : '—'}</TableCell>
+                          <TableCell align="right" sx={{ minWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', verticalAlign: 'middle', }}>{row.mode_coefficient_k !== null ? row.mode_coefficient_k : '—'}</TableCell>
+                          <TableCell align="right" sx={{ minWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', verticalAlign: 'middle', }}>{row.mode_coefficient_k_min_temp !== null ? row.mode_coefficient_k_min_temp : '—'}</TableCell>
+                          <TableCell align="right" sx={{ minWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', verticalAlign: 'middle', }}>{row.mode_coefficient_k_max_temp !== null ? row.mode_coefficient_k_max_temp : '—'}</TableCell>
+                          <TableCell align="right" sx={{ minWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', verticalAlign: 'middle', }}>{row.lbd_ex_min !== null ? row.lbd_ex_min : '—'}</TableCell>
+                          <TableCell align="right" sx={{ minWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', verticalAlign: 'middle', }}>{row.lbd_ex_max !== null ? row.lbd_ex_max : '—'}</TableCell>
+                          <TableCell align="right" sx={{ maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', verticalAlign: 'middle', }}>{row.link && row.link !== "нет данных " ? (
+                          <a 
+                            href={row.link} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            style={{
+                              color: '#1976d2',
+                              textDecoration: 'none'
+                            }}
+                          >
+                            {row.link}
+                          </a>
+                        ) : (
+                          '—'
+                        )}</TableCell>
+                          <TableCell align="right" sx={{ minWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', verticalAlign: 'middle', }}>{categoryMap[row.category_id] || '—'}</TableCell>
                         </TableRow>
                       );
                     })}
@@ -537,7 +688,7 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
                 </Table>
               </TableContainer>
               <TablePagination
-                rowsPerPageOptions={[5, 10, 25]}
+                rowsPerPageOptions={[10, 25, 30]}
                 component="div"
                 count={filterRows.length}
                 rowsPerPage={rowsPerPage}

@@ -4,6 +4,7 @@ import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import Statistics from './statistics'
 import Table from './tableCell'
+import CategoriesTable from './categories';
 
 function samePageLinkNavigation(
   event: React.MouseEvent<HTMLAnchorElement, MouseEvent>,
@@ -63,8 +64,11 @@ export default function NavTabs() {
   if (value === 0) {
     component = <Table />;
   } else if (value === 1) {
+    component = <CategoriesTable />;
+  } else if (value === 2) {
     component = <Statistics />;
   }
+  
 
   return (
     <Box sx={{ width: '100%' }}>
@@ -74,6 +78,7 @@ export default function NavTabs() {
         role="navigation"
       >
         <LinkTab label="Главная" href="/tableCell" />
+        <LinkTab label="Категории" href="/categories" />
         <LinkTab label="Статистика" href="/statistics" />
       </Tabs>
       {component}
