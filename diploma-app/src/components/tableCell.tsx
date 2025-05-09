@@ -1,4 +1,4 @@
-import { Autocomplete, Box, Button, Checkbox, Chip, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TableSortLabel, TextField, Toolbar, Tooltip, Typography } from '@mui/material';
+import { Autocomplete, Box, Button, Checkbox, Chip, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TableSortLabel, TextField, Toolbar, Tooltip, Typography } from '@mui/material';
 import React, { useEffect } from 'react';
 import { visuallyHidden } from '@mui/utils';
 import { alpha } from '@mui/material/styles';
@@ -36,6 +36,14 @@ export interface Data {
 export interface Category {
   name: string;
   id: number;
+}
+
+interface TestResult {
+  id: number;
+  name: string;
+  temperature: number;
+  lambda_exploitation: number;
+  mtbf_exploitation: number;
 }
 
 function descendingComparator<T>(a: T, b: T, orderBy: keyof T) {
@@ -81,37 +89,37 @@ const headCells: readonly HeadCell[] = [
         id: 'warranty_years',
         numeric: false,
         disablePadding: false,
-        label: 'Гарантийный срок',
+        label: 'Гарантийный срок (лет)',
     },
     {
         id: 'min_temperature',
         numeric: false,
         disablePadding: false,
-        label: 'Мин. Рабочая темп',
+        label: 'Мин. Рабочая темп (°C)',
     },
     {
         id: 'max_temperature',
         numeric: true,
         disablePadding: false,
-        label: 'Макс. Рабочая темп',
+        label: 'Макс. Рабочая темп (°C)',
     },
     {
         id: 'mtbf_hours',
         numeric: true,
         disablePadding: false,
-        label: 'MTBF (тыс. ч)',
+        label: 'Средняя наработка на отказ (тыс. ч)',
     },
     {
         id: 'mtbf_exploitation_min_temp',
         numeric: true,
         disablePadding: false,
-        label: 'MTBF мин. темп. (тыс. ч)',
+        label: 'Средняя наработка на отказ мин. темп. (тыс. ч)',
     },
     {
         id: 'mtbf_exploitation_max_temp',
         numeric: true,
         disablePadding: false,
-        label: 'MTBF макс. темп. (тыс. ч)',
+        label: 'Средняя наработка на отказ макс. темп. (тыс. ч)',
     },
     {
         id: 'gamma_percent_resource',
@@ -123,7 +131,7 @@ const headCells: readonly HeadCell[] = [
         id: 'preservation_period',
         numeric: true,
         disablePadding: false,
-        label: 'Срок сохраняемости',
+        label: 'Срок сохраняемости (лет)',
     },
     {
         id: 'mode_coefficient_k',
@@ -147,13 +155,13 @@ const headCells: readonly HeadCell[] = [
         id: 'lbd_ex_min',
         numeric: true,
         disablePadding: false,
-        label: 'Интенсивность отказов мин. темп.',
+        label: 'Интенсивность отказов мин. темп. (1/час)',
     },
     {
         id: 'lbd_ex_max',
         numeric: true,
         disablePadding: false,
-        label: 'Интенсивность отказов макс. темп.',
+        label: 'Интенсивность отказов макс. темп. (1/час)',
     },
     {
         id: 'link',
@@ -239,6 +247,7 @@ interface EnhancedTableToolbarProps {
   setRows: React.Dispatch<React.SetStateAction<Data[]>>;
   setFilterRows: React.Dispatch<React.SetStateAction<Data[]>>;
   setSelected: React.Dispatch<React.SetStateAction<number[]>>;
+  setTestResults: React.Dispatch<React.SetStateAction<TestResult[]>>;
 }
 
 function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
@@ -251,6 +260,8 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
   const [snackbarOpen, setSnackbarOpen] = React.useState(false);
   const [snackbarMessage, setSnackbarMessage] = React.useState('');
   const [snackbarSeverity, setSnackbarSeverity] = React.useState<'success' | 'error'>('success');
+  const [openTestDialog, setOpenTestDialog] = React.useState(false);
+  const [testTemperature, setTestTemperature] = React.useState('');
 
   const VisuallyHiddenInput = styled('input')({
     clip: 'rect(0 0 0 0)',
@@ -264,12 +275,37 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
     width: 1,
   });
 
+  const categoryMap = React.useMemo(() => {
+    const map: Record<number, string> = {};
+    categories.forEach((cat) => {
+      map[cat.id] = cat.name;
+    });
+    return map;
+  }, [categories]);
+
   const Alert = React.forwardRef<HTMLDivElement, AlertProps>(function Alert(props, ref) {
     return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
   });
   
   const handleExport = () => {
-    const data = rows
+    const data = rows.map(r => ({
+      Наименование: r.name,
+      'Гарантийный срок': r.warranty_years,
+      'Мин. Рабочая темп (°C)': r.min_temperature,
+      'Макс. Рабочая темп (°C)': r.max_temperature,
+      'Средняя наработка на отказ (тыс. ч)': r.mtbf_hours,
+      'Средняя наработка на отказ мин. темп. (тыс. ч)': r.mtbf_exploitation_min_temp,
+      'Средняя наработка на отказ макс. темп. (тыс. ч)': r.mtbf_exploitation_max_temp,
+      'Гамма-процентный ресурс': r.gamma_percent_resource,
+      'Срок сохраняемости (лет)': r.preservation_period,
+      'Коэффициент режима': r.mode_coefficient_k,
+      'Коэффициент режима мин. темп.': r.mode_coefficient_k_min_temp,
+      'Коэффициент режима макс. темп.': r.mode_coefficient_k_max_temp,
+      'Интенсивность отказов мин. темп. (1/час)': r.lbd_ex_min,
+      'Интенсивность отказов макс. темп. (1/час)': r.lbd_ex_max,
+      Ссылка: r.link,
+      Категория: categoryMap[r.category_id]
+    }))
 
     const worksheet = XLSX.utils.json_to_sheet(data);
     const workbook = XLSX.utils.book_new();
@@ -318,7 +354,6 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
       setSnackbarSeverity('success');
       setSnackbarOpen(true);
   
-      // Обновляем данные после импорта
       const response = await axios.get<Data[]>(`${import.meta.env.VITE_API_URL}/equipments/?skip=0&limit=700`);
       props.setRows(response.data);
       props.setFilterRows(response.data);
@@ -330,9 +365,31 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
       setSnackbarOpen(true);
     }
   
-    // Очистить input, чтобы можно было загрузить тот же файл снова
     event.target.value = '';
   };
+
+  const handleTest = async () => {
+    if (!testTemperature || isNaN(Number(testTemperature))) return;
+    const promises = selected.map((id) =>
+      axios
+        .get(`${import.meta.env.VITE_API_URL}/equipments/equipments/${id}/calculate_mtbf_exploitation/?temperature=${testTemperature}`)
+        .then((res) => {
+          const device = rows.find((r) => r.id === id);
+          return {
+            id,
+            name: device?.name || '',
+            temperature: Number(testTemperature),
+            lambda_exploitation: res.data.lambda_exploitation,
+            mtbf_exploitation: res.data.mtbf_exploitation,
+          };
+        })
+    );
+    const results = await Promise.all(promises);
+    props.setTestResults((prev) => [...prev, ...results]);
+    setOpenTestDialog(false);
+    setTestTemperature('');
+  };
+
 
   return (
     <Toolbar
@@ -380,11 +437,14 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
         </Box>
       )}
       {numSelected > 0 ? (
-        <Tooltip title="Удалить">
-          <IconButton color="error" onClick={deleteItems}>
-            <Delete />
-          </IconButton>
-        </Tooltip>
+        <Box display="flex" gap={2}>
+          <Button variant="contained" onClick={() => setOpenTestDialog(true)}>Тест</Button>
+          <Tooltip title="Удалить">
+            <IconButton color="error" onClick={deleteItems}>
+              <Delete />
+            </IconButton>
+          </Tooltip>
+        </Box>
       ) : (
         <Tooltip title="Добавить">
           <IconButton color="primary" onClick={() => {setAdding(true); setOpen(true)}}>
@@ -405,6 +465,23 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
         {snackbarMessage}
       </Alert>
     </Snackbar>
+      <Dialog open={openTestDialog} onClose={() => setOpenTestDialog(false)}>
+        <DialogTitle>Тестирование оборудования</DialogTitle>
+        <DialogContent>
+          <TextField
+            label="Температура"
+            type="number"
+            fullWidth
+            margin="dense"
+            value={testTemperature}
+            onChange={(e) => setTestTemperature(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenTestDialog(false)}>Отмена</Button>
+          <Button variant="contained" onClick={handleTest}>Сохранить</Button>
+        </DialogActions>
+      </Dialog>
     </Toolbar>
   );
 }
@@ -423,6 +500,8 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
         const [id, setId] = React.useState(1);
         const [searchTerms, setSearchTerms] = React.useState<string[]>([]);
         const [query, setQuery] = React.useState('');
+        const [testResults, setTestResults] = React.useState<TestResult[]>([]);
+        const [selectedTestIds, setSelectedTestIds] = React.useState<number[]>([]);
         const optionList = React.useMemo(() => {
           const devNames = rows.map((r) => r.name).filter(Boolean) as string[];
           const catNames = categories.map((c) => c.name).filter(Boolean);
@@ -459,8 +538,6 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
           });
           return map;
         }, [categories]);
-        
-        console.log(rows);
       
         const handleRequestSort = (
           _event: React.MouseEvent<unknown>,
@@ -503,6 +580,34 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
           const response = await axios.get<Data[]>(`${api}/equipments/?skip=0&limit=700`);
           setRows(response.data);
         };
+
+        const handleExportTestResults = () => {
+          if (testResults.length === 0) return;
+  
+          const data = testResults.map(r => ({
+            Название: r.name,
+            Температура: r.temperature,
+            'Средняя наработка на отказ (тыс. ч)': r.mtbf_exploitation,
+            'Интенсивность отказов (1/час)': r.lambda_exploitation,
+          }));
+
+          const worksheet = XLSX.utils.json_to_sheet(data);
+          const workbook = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(workbook, worksheet, 'TestResults');
+          XLSX.writeFile(workbook, 'test_results.xlsx');
+        };
+
+        const handleSelectTestRow = (id: number) => {
+          setSelectedTestIds((prev) =>
+            prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+          );
+        };
+
+        const handleDeleteSelectedTests = () => {
+          setTestResults((prev) => prev.filter((r) => !selectedTestIds.includes(r.id)));
+          setSelectedTestIds([]);
+        };
+
       
         const handleChangePage = (_event: unknown, newPage: number) => {
           setPage(newPage);
@@ -529,7 +634,6 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
           setPage(0);
         }, [searchTerms, rows, categoryMap]);
       
-        // Avoid a layout jump when reaching the last page with empty rows.
         const emptyRows =
           page > 0 ? Math.max(0, (1 + page) * rowsPerPage - filterRows.length) : 0;
       
@@ -560,13 +664,13 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
               filterOptions={filterOptions}
               inputValue={query}
               onInputChange={(_, value) => setQuery(value)}
-              onChange={(_, value) => {                   // сработает при выборе или Enter
+              onChange={(_, value) => {
                 if (!value) return;
                 const term = value.toString().trim().toLowerCase();
                 if (term && !searchTerms.includes(term)) {
-                  setSearchTerms((prev) => [...prev, term]);  // кидаем в фильтры
+                  setSearchTerms((prev) => [...prev, term]);
                 }
-                setQuery('');                                // чистим поле
+                setQuery('');
               }}
               options={optionList}
               clearOnEscape
@@ -588,7 +692,7 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
             </Box>
             {filterRows.length > 0 ? 
             <Paper variant="outlined" sx={{ width: '100%', mb: 2 }}>
-              <EnhancedTableToolbar numSelected={selected.length} rows={rows} selected={selected} setRows={setRows} setFilterRows={setFilterRows} setSelected={setSelected} categories={categories} onSave={handleSave}/>
+              <EnhancedTableToolbar numSelected={selected.length} rows={rows} selected={selected} setRows={setRows} setFilterRows={setFilterRows} setSelected={setSelected} categories={categories} onSave={handleSave} setTestResults={setTestResults}/>
               <TableContainer sx={{ maxHeight: '75vh', overflowX: 'auto' }}>
                 <Table
                   sx={{ minWidth: 900 }}
@@ -656,7 +760,7 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
                           <TableCell align="right" sx={{ minWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', verticalAlign: 'middle', }}>{row.mode_coefficient_k_max_temp !== null ? row.mode_coefficient_k_max_temp : '—'}</TableCell>
                           <TableCell align="right" sx={{ minWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', verticalAlign: 'middle', }}>{row.lbd_ex_min !== null ? row.lbd_ex_min : '—'}</TableCell>
                           <TableCell align="right" sx={{ minWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', verticalAlign: 'middle', }}>{row.lbd_ex_max !== null ? row.lbd_ex_max : '—'}</TableCell>
-                          <TableCell align="right" sx={{ maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', verticalAlign: 'middle', }}>{row.link && row.link !== "нет данных " ? (
+                          <TableCell align="right" sx={{ maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', verticalAlign: 'middle', }}>{row.link && !["нет данных", "нет данных "].includes(row.link.trim())  ? (
                           <a 
                             href={row.link} 
                             target="_blank" 
@@ -697,7 +801,59 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
                 onRowsPerPageChange={handleChangeRowsPerPage}
               />
             </Paper> : <Typography align='center' variant='h5' pt={10}>Ничего не найдено. Попробуйте проверить правильность ввода или добавьте новое устройство.</Typography>}
-            
+            {testResults.length > 0 && (
+              <Paper sx={{ mt: 4, p: 2 }}>
+                <Box sx={{display: 'flex', justifyContent: 'space-between'}}>
+                  <Typography variant="h6">Результаты тестирования</Typography>
+                  <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }} gap={2}>
+                    <Button color="primary" variant="contained" onClick={handleExportTestResults}>
+                      Экспорт
+                    </Button>
+                    <Button color="error" variant="contained" onClick={() => setTestResults([])}>
+                      Очистить
+                    </Button>
+                    {selectedTestIds.length > 0 && (
+                      <Button variant="contained" color="error" onClick={handleDeleteSelectedTests}>
+                        Удалить выбранные
+                      </Button>
+                    )}
+                  </Box>
+                </Box>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell padding="checkbox"></TableCell>
+                      <TableCell>Наименование</TableCell>
+                      <TableCell>Температура</TableCell>
+                      <TableCell>Средняя наработка на отказ</TableCell>
+                      <TableCell>Интенсивность отказов</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {testResults.map((r) => (
+                      <TableRow key={r.id + r.temperature}
+                        hover
+                        selected={selectedTestIds.includes(r.id)}
+                        onClick={() => handleSelectTestRow(r.id)}
+                        sx={{ cursor: 'pointer' }}
+                      >
+                        <TableCell padding="checkbox">
+                          <input
+                            type="checkbox"
+                            checked={selectedTestIds.includes(r.id)}
+                            onChange={() => handleSelectTestRow(r.id)}
+                          />
+                        </TableCell>
+                        <TableCell>{r.name}</TableCell>
+                        <TableCell>{r.temperature}°C</TableCell>
+                        <TableCell>{r.mtbf_exploitation.toFixed(2)}</TableCell>
+                        <TableCell>{r.lambda_exploitation.toExponential(2)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </Paper>
+            )}
           </Box>
         );
       }

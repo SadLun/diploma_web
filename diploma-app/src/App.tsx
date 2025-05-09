@@ -10,7 +10,7 @@ function App() {
   return (
     <Provider store={store}>
       <Container maxWidth="lg">
-        <Typography component="h1" variant="h2" align="center">Device DataBase</Typography>
+        <Typography component="h1" variant="h3" align="center">База данных теле и медиакоммуникационного оборудования</Typography>
         <NavTabs />
       </Container>
     </Provider>

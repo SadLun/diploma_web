@@ -23,6 +23,7 @@ const style = {
     left: '50%',
     transform: 'translate(-50%, -50%)',
     width: 600,
+    height: 675,
     bgcolor: 'background.paper',
     border: '2px solid #000',
     boxShadow: 24,
@@ -127,15 +128,15 @@ const AddDeviceModal: React.FC<Props> = (props) => {
         aria-labelledby="modal-modal-title"
         aria-describedby="modal-modal-description"
       >
-        <Box sx={style}>
+        <Box sx={{...style, display: 'flex', flexDirection: 'column'}}>
           <Typography id="modal-modal-title" variant="h6" component="h2" sx={{ pb: 5 }}>
             {adding ? "Добавить устройство" : "Редактировать устройство"}
           </Typography>
           <TextField fullWidth required label="Наименование" value={form.name} onChange={handleChange("name")} sx={{ pb: 2 }} error={form.name.trim() === ""} helperText={form.name.trim() === "" ? "Обязательное поле" : ""}/>
-          <TextField fullWidth label="Гарантийный срок" value={form.warranty_years} onChange={handleChange("warranty_years")} sx={{ pb: 2 }} />
-          <TextField fullWidth label="Минимальная рабочая температура" value={form.min_temperature} onChange={handleChange("min_temperature")} sx={{ pb: 2 }} />
-          <TextField fullWidth label="Максимальная рабочая температура" value={form.max_temperature} onChange={handleChange("max_temperature")} sx={{ pb: 2 }} />
-          <TextField fullWidth label="MTBF" value={form.mtbf_hours} onChange={handleChange("mtbf_hours")} sx={{ pb: 2 }} />
+          <TextField fullWidth label="Гарантийный срок (лет)" value={form.warranty_years} onChange={handleChange("warranty_years")} sx={{ pb: 2 }} />
+          <TextField fullWidth label="Минимальная рабочая температура (°C)" value={form.min_temperature} onChange={handleChange("min_temperature")} sx={{ pb: 2 }} />
+          <TextField fullWidth label="Максимальная рабочая температура (°C)" value={form.max_temperature} onChange={handleChange("max_temperature")} sx={{ pb: 2 }} />
+          <TextField fullWidth label="Средняя наработка на отказ (тыс. ч)" value={form.mtbf_hours} onChange={handleChange("mtbf_hours")} sx={{ pb: 2 }} />
           <TextField fullWidth label="Ссылка" value={form.link} onChange={handleChange("link")} sx={{ pb: 2 }} />
           <TextField
           fullWidth
@@ -154,7 +155,7 @@ const AddDeviceModal: React.FC<Props> = (props) => {
               </MenuItem>
             ))}
           </TextField>
-          <Stack spacing={2} direction="row" sx={{ justifyContent: "flex-end" }}>
+          <Stack spacing={2} direction="row" sx={{ justifyContent: "flex-end", mt: "auto"}}>
             <Button variant="outlined" onClick={onClose}>
               Отмена
             </Button>

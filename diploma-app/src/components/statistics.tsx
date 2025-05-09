@@ -18,16 +18,16 @@ interface CategoryStats {
 }
 
 const chartFields = [
-  { key: 'avg_mtbf_hours', label: 'Среднее MTBF (тыс. часов)' },
+  { key: 'avg_mtbf_hours', label: 'Средняя наработка на отказ (тыс. часов)' },
   { key: 'avg_preservation_period', label: 'Средний срок сохраняемости (лет)' },
-  { key: 'avg_gamma_percent_resource', label: 'Средний процент ресурса γ' },
-  { key: 'avg_mode_coefficient_k', label: 'Коэффициент режима K' },
-  { key: 'avg_mode_coefficient_k_min_temp', label: 'Коэф. режима при мин. темп.' },
-  { key: 'avg_mode_coefficient_k_max_temp', label: 'Коэф. режима при макс. темп.' },
-  { key: 'avg_mtbf_exploitation_min_temp', label: 'MTBF при мин. темп. (тыс. часов)' },
-  { key: 'avg_mtbf_exploitation_max_temp', label: 'MTBF при макс. темп. (тыс. часов)' },
-  { key: 'avg_lbd_ex_min', label: 'Интенсивность отказов при мин. темп.' },
-  { key: 'avg_lbd_ex_max', label: 'Интенсивность отказов при макс. темп.' },
+  { key: 'avg_gamma_percent_resource', label: 'Средний гамма-процентный ресурс' },
+  { key: 'avg_mode_coefficient_k', label: 'Средний коэффициент режима K' },
+  { key: 'avg_mode_coefficient_k_min_temp', label: 'Средний коэф. режима при мин. темп.' },
+  { key: 'avg_mode_coefficient_k_max_temp', label: 'Средний коэф. режима при макс. темп.' },
+  { key: 'avg_mtbf_exploitation_min_temp', label: 'Средняя наработка на отказ при мин. темп. (тыс. часов)' },
+  { key: 'avg_mtbf_exploitation_max_temp', label: 'Средняя наработка на отказ при макс. темп. (тыс. часов)' },
+  { key: 'avg_lbd_ex_min', label: 'Средняя интенсивность отказов при мин. темп.' },
+  { key: 'avg_lbd_ex_max', label: 'Средняя интенсивность отказов при макс. темп.' },
 ];
 
 const Statistics: React.FC = () => {
