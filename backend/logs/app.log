@@ -46,4 +46,6 @@ DETAIL:  Ключ (category_id)=(0) отсутствует в таблице "ca
 2025-05-03 10:46:32,071 - ERROR - Unexpected error: name 'io' is not defined
 2025-05-03 10:51:01,695 - ERROR - Unexpected error: name 'io' is not defined
 2025-05-03 11:10:52,320 - ERROR - Validation error: [{'type': 'int_parsing', 'loc': ('path', 'equipment_id'), 'msg': 'Input should be a valid integer, unable to parse string as an integer', 'input': 'export'}]
-2025-05-03 11:17:57,387 - ERROR - Validation error: [{'type': 'int_parsing', 'loc': ('path', 'equipment_id'), 'msg': 'Input should be a valid integer, unable to parse string as an integer', 'input': 'export-all'}]
+2025-05-03 11:17:57,387 - ERROR - Validation error: [{'type': 'int_parsing', 'loc': ('path', 'equipment_id'), 'msg': 'Input should be a valid integer, unable to parse string as an integer', 'input': 'export-all'}]2025-05-10 20:19:44,379 - INFO - Root endpoint called
+2025-05-10 20:20:13,954 - ERROR - Unexpected error: No inspection system is available for object of type <class 'pydantic._internal._model_construction.ModelMetaclass'>
+2025-05-11 13:24:21,517 - INFO - Root endpoint called
