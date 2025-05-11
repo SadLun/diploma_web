@@ -1,9 +1,10 @@
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from app.database import Base, engine
-from app.models import category, equipment
+from app.models import category, equipment, calculation
 from app.routers import category as category_router
 from app.routers import equipment as equipment_router
+from app.routers import calculation as calculation_router
 from app.core.exception_handlers import validation_exception_handler, general_exception_handler
 from app.core.logger import logger
 from app.routers import health as health_router
@@ -29,7 +30,7 @@ Base.metadata.create_all(bind=engine)
 
 app.include_router(category_router.router)
 app.include_router(equipment_router.router)
-
+app.include_router(calculation_router.router)
 #app.include_router(category.router, prefix="/api/categories", tags=["Categories"])
 #Живой?
 app.include_router(health_router.router)

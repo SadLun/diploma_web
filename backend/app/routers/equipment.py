@@ -14,6 +14,9 @@ from app.database import get_db
 from app.models.equipment import Equipment as EquipmentModel
 from app.schemas.equipment import Equipment as EquipmentSchema
 from math import exp
+from app.crud import calculation as crud_calc 
+from app.schemas.calculation import CalculationCreate
+from math import exp
 
 router = APIRouter(
     prefix="/equipments",
@@ -200,6 +203,14 @@ def calculate_mtbf_exploitation(
     lambda_e = 1 / equipment.mtbf_hours
     lambda_ex = lambda_e * Kt
     mtbf_ex = 1 / lambda_ex
+
+    rec_in = CalculationCreate( 
+        equipment_id = equipment.id,
+        temperature = temperature,
+        calculated_lambda = round(lambda_ex, 6),
+        calculated_mtbf = round(mtbf_ex, 3)
+    )
+    crud_calc.create(db, rec_in)
 
     return {
         'id': equipment.id,

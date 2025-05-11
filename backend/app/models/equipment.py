@@ -15,3 +15,4 @@ class Equipment(Base):
     mtbf_hours = Column(Float)
 
     category = relationship("Category", backref="equipments")
+    calculations = relationship("CalculationRecord",back_populates="equipment",cascade="all, delete-orphan")
