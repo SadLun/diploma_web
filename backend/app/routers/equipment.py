@@ -18,6 +18,7 @@ from app.crud import calculation as crud_calc
 from app.schemas.calculation import CalculationCreate
 from math import exp
 
+#API запросы для оборудования
 router = APIRouter(
     prefix="/equipments",
     tags=["Equipments"]

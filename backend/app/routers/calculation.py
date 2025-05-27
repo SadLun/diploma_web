@@ -4,6 +4,7 @@ from app.database import get_db
 from app.schemas.calculation import CalculationCreate, Calculation
 from app.crud.calculation import create_record, get_records_by_equipment
 
+#API для дополнительных вычислений
 router = APIRouter(prefix="/calculations", tags=["Calculations"])
 
 @router.post("/", response_model=Calculation)

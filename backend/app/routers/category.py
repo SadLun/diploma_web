@@ -5,6 +5,7 @@ from app import crud, schemas
 from app.crud.category import get_categories_with_averages
 from app.schemas.category import CategoryWithStats
 
+#API запросы для категорий
 router = APIRouter(
     prefix="/categories",
     tags=["Categories"]

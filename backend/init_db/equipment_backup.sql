@@ -1,5 +1,5 @@
 --
--- PostgreSQL database dump
+-- PostgreSQL база данных дамп
 --
 
 -- Dumped from database version 17.4
