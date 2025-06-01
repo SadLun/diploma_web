@@ -99,13 +99,15 @@ const CategoriesTable: React.FC = () => {
         <Table sx={{ borderCollapse: 'separate', borderSpacing: 0 }}>
           <TableHead>
             <TableRow>
-              <TableCell sx={{ width: '80%' }}><b>Наименование</b></TableCell>
+              <TableCell sx={{ width: '20%'}}><b>ID</b></TableCell>
+              <TableCell sx={{ width: '60%' }}><b>Наименование</b></TableCell>
               <TableCell sx={{ width: '20%', textAlign: 'center' }}><b>Действия</b></TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {filteredCategories.map(cat => (
               <TableRow key={cat.id}>
+                <TableCell>{cat.id}</TableCell>
                 <TableCell>{cat.name}</TableCell>
                 <TableCell align="center">
                   <IconButton color="primary" onClick={() => handleOpen(cat)}>
